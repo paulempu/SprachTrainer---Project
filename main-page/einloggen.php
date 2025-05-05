@@ -63,8 +63,8 @@
             <h2>Anmelden</h2>
             <form action="einloggen-verarbeiten.php" method="post">
                 <div class="mb-3">
-                    <label for="email" class="form-label">E-Mail-Adresse</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
+                    <label for="username" class="form-label">Benutzername</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Passwort</label>
@@ -82,8 +82,6 @@
             </div>
         </div>
     </main>
-
-
 
     <!-- Bootstrap JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
