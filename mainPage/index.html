@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EngliFy.com - Dein Sprachtrainer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3a5f99;
+            --primary-dark: #1a356e;
+            --primary-light: #c5d3ed;
+            --accent-color: #ff7e5f;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .brand-name {
+            color: #ffffff;
+            animation: pulsate 2s infinite alternate;
+        }
+        
+        .brand-com {
+            color: var(--primary-light);
+            font-weight: 400;
+            animation: pulsate 2s infinite alternate-reverse;
+        }
+        
+        @keyframes pulsate {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .nav-link {
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-outline-light {
+            border-width: 2px;
+        }
+        
+        #sidebar {
+            min-width: 250px;
+            max-width: 250px;
+            background: #343a40;
+            color: #fff;
+            transition: all 0.3s;
+            height: calc(100vh - 62px);
+            position: fixed;
+            z-index: 999;
+        }
+        
+        #sidebar.active {
+            margin-left: -250px;
+        }
+        
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background: #212529;
+        }
+        
+        #sidebar ul.components {
+            padding: 20px 0;
+            border-bottom: 1px solid #47748b;
+        }
+        
+        #sidebar ul li a {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        #sidebar ul li a:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        
+        #sidebar ul li.active > a {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        
+        #content {
+            width: calc(100% - 250px);
+            min-height: calc(100vh - 62px);
+            transition: all 0.3s;
+            position: absolute;
+            top: 62px;
+            right: 0;
+        }
+        
+        #content.active {
+            width: 100%;
+        }
+        
+        #sidebarCollapse {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .quick-stat {
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            color: white;
+        }
+        
+        .quick-stat.bg-primary {
+            background: var(--primary-color) !important;
+        }
+        
+        .quick-stat.bg-success {
+            background: var(--success-color) !important;
+        }
+        
+        .quick-stat.bg-warning {
+            background: var(--warning-color) !important;
+            color: #212529;
+        }
+        
+        .quick-stat.bg-danger {
+            background: var(--danger-color) !important;
+        }
+        
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .card-title {
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+        }
+        
+        .flashcard {
+            min-height: 200px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+        
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background-color: var(--primary-light);
+        }
+        
+        .word {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+        
+        .hint {
+            font-style: italic;
+            color: #6c757d;
+        }
+        
+        .translation {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+        
+        .examples {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+        
+        .card-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .btn-card-action {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .btn-card-action:hover {
+            transform: scale(1.1);
+        }
+        
+        .vocabulary-list .list-group-item {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .vocabulary-list .list-group-item:hover {
+            background-color: var(--primary-light);
+        }
+        
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px;
+            }
+            #sidebar.active {
+                margin-left: 0;
+            }
+            #content {
+                width: 100%;
+            }
+            #content.active {
+                width: calc(100% - 250px);
+            }
+            .navbar-brand {
+                font-size: 1.5rem;
+            }
+            .auth-buttons {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+            }
+            .auth-buttons .btn {
+                margin-bottom: 5px;
+                width: 120px;
+                text-align: center;
+            }
+        }
+
+        .streak-day {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .streak-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .streak-inactive {
+            background-color: #e9ecef;
+            color: #adb5bd;
+        }
+
+        .streak-today {
+            border: 2px solid var(--primary-dark);
+        }
+
+        /* Animation für Karteikarten */
+        @keyframes cardSuccess {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes cardFailure {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .card-success {
+            animation: cardSuccess 0.6s ease;
+        }
+
+        .card-failure {
+            animation: cardFailure 0.6s ease;
+        }
+
+        .custom-control.custom-checkbox {
+            margin-bottom: 10px;
+        }
+
+        .theme-item {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .theme-item.active {
+            border-color: #000;
+        }
+
+        /* Lernmodus Styles */
+        .learn-mode-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .learn-progress {
+            height: 8px;
+            margin-bottom: 30px;
+        }
+
+        .question-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .answer-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .answer-option {
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .answer-option:hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+
+        .answer-option.selected {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .answer-option.correct {
+            border-color: var(--success-color);
+            background-color: rgba(40, 167, 69, 0.2);
+        }
+
+        .answer-option.incorrect {
+            border-color: var(--danger-color);
+            background-color: rgba(220, 53, 69, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark py-2">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="me-2">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <a class="navbar-brand" href="index.php">
+                    <span class="brand-name">EngliFy</span><span class="brand-com">.com</span>
+                </a>
+                
+                <div class="ms-auto auth-buttons">
+                    <a href="einloggen.php" class="btn btn-outline-light me-2">Einloggen</a>
+                    <a href="registrieren.php" class="btn btn-light">Registrieren</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="wrapper d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>Menu</h3>
+            </div>
+
+            <ul class="list-unstyled components">
+                <li class="active">
+                    <a href="#" data-page="dashboard"><i class="fas fa-home me-2"></i> Dashboard</a>
+                </li>
+                <li>
+                    <a href="#" data-page="flashcards"><i class="fas fa-layer-group me-2"></i> Karteikarten</a>
+                </li>
+                <li>
+                    <a href="#" data-page="learn"><i class="fas fa-graduation-cap me-2"></i> Lernmodus</a>
+                </li>
+                <li>
+                    <a href="#" data-page="vocabulary"><i class="fas fa-book me-2"></i> Vokabellisten</a>
+                </li>
+                <li>
+                    <a href="#" data-page="stats"><i class="fas fa-chart-bar me-2"></i> Statistiken</a>
+                </li>
+                <li>
+                    <a href="#" data-page="settings"><i class="fas fa-cog me-2"></i> Einstellungen</a>
+                </li>
+                <li>
+                    <a href="#" data-page="help"><i class="fas fa-question-circle me-2"></i> Hilfe</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content" class="p-4">
+            <!-- Dashboard -->
+            <div id="dashboard-page" class="page-content">
+                <h2 class="mb-4">Dashboard</h2>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+                        <div class="quick-stat bg-primary">
+                            <div class="stat-icon">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <div class="stat-number">146</div>
+                            <div class="stat-label">Vokabeln gesamt</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+                        <div class="quick-stat bg-success">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-number">87</div>
+                            <div class="stat-label">Gemeistert</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+                        <div class="quick-stat bg-warning">
+                            <div class="stat-icon">
+                                <i class="fas fa-sync-alt"></i>
+                            </div>
+                            <div class="stat-number">42</div>
+                            <div class="stat-label">In Bearbeitung</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="quick-stat bg-danger">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-number">17</div>
+                            <div class="stat-label">Schwierig</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-lg-8 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0">Tägliche Lernstatistik</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="learningStatsChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0">Lernstreak</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex">
+                                        <div class="streak-day streak-active">M</div>
+                                        <div class="streak-day streak-active">D</div>
+                                        <div class="streak-day streak-active">M</div>
+                                        <div class="streak-day streak-active streak-today">D</div>
+                                        <div class="streak-day streak-inactive">F</div>
+                                        <div class="streak-day streak-inactive">S</div>
+                                        <div class="streak-day streak-inactive">S</div>
+                                    </div>
+                                    <span class="badge bg-success">4 Tage 🔥</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="h5 mb-0">Noch heute lernen!</div>
+                                    <p class="text-muted small">Um deine Streak fortzusetzen</p>
+                                    <a href="#" class="btn btn-primary" data-page="flashcards">Jetzt lernen</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h5 class="card-title mb-0">Dein Fortschritt</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Elementarer Sprachgebrauch (A1-A2)</h6>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                
+                                <h6>Selbständige Sprachverwendung (B1-B2)</h6>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                
+                                <h6>Kompetente Sprachverwendung (C1-C2)</h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 15%" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                                <h5 class="card-title mb-0">Empfohlene Vokabellisten</h5>
+                                <a href="#" class="btn btn-sm btn-outline-primary">Alle anzeigen</a>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Business English</h6>
+                                            <small class="text-muted">42 Vokabeln • Mittelschwer</small>
+                                        </div>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">Üben</a>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Reisen & Urlaub</h6>
+                                            <small class="text-muted">36 Vokabeln • Leicht</small>
+                                        </div>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">Üben</a>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Akademisches Englisch</h6>
+                                            <small class="text-muted">28 Vokabeln • Fortgeschritten</small>
+                                        </div>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">Üben</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                                <h5 class="card-title mb-0">Schwierige Vokabeln</h5>
+                                <a href="#" class="btn btn-sm btn-outline-danger">Alle anzeigen</a>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">quintessential</h6>
+                                            <small class="text-muted">wesentlich, typisch</small>
+                                        </div>
+                                        <span class="badge bg-danger rounded-pill">7 Fehler</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">exacerbate</h6>
+                                            <small class="text-muted">verschlimmern, verschärfen</small>
+                                        </div>
+                                        <span class="badge bg-danger rounded-pill">5 Fehler</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">ambiguous</h6>
+                                            <small class="text-muted">mehrdeutig, unklar</small>
+                                        </div>
+                                        <span class="badge bg-danger rounded-pill">4 Fehler</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Flashcards -->
+            <div id="flashcards-page" class="page-content d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Karteikarten</h2>
+                    <div>
+                        <button class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-filter me-1"></i> Filter
+                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-primary">Starten</button>
+                            <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">Zufällige Reihenfolge</a></li>
+                                <li><a class="dropdown-item" href="#">Schwierigste zuerst</a></li>
+                                <li><a class="dropdown-item" href="#">Neueste zuerst</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#">Nur unbekannte</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <select class="form-select" id="deckSelect">
+                                    <option selected>Business English (42 Karten)</option>
+                                    <option>Reisen & Urlaub (36 Karten)</option>
+                                    <option>Akademisches Englisch (28 Karten)</option>
+                                    <option>Alle Karten (146)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="progress mt-2">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flashcard card mb-4" onclick="this.classList.toggle('flipped')">
+                    <div class="card-body flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="word">quintessential</div>
+                            <div class="hint">[kwin-tuh-sen-shuhl]</div>
+                            <p class="text-muted mt-3">Klicken um umzudrehen</p>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="translation">wesentlich, typisch</div>
+                            <div class="examples">
+                                <p><strong>Beispiel:</strong> This restaurant offers the quintessential Italian dining experience.</p>
+                                <p><em>Dieses Restaurant bietet das typische italienische Esserlebnis.</em></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions mb-4">
+                    <button class="btn btn-danger btn-card-action" title="Schwierig">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button class="btn btn-warning btn-card-action" title="Wiederholen">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button class="btn btn-info btn-card-action" title="Notiz hinzufügen">
+                        <i class="fas fa-sticky-note"></i>
+                    </button>
+                    <button class="btn btn-success btn-card-action" title="Gewusst">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button class="btn btn-outline-secondary">
+                        <i class="fas fa-chevron-left me-1"></i> Vorherige
+                    </button>
+                    <div>Karte 1 von 42</div>
+                    <button class="btn btn-outline-primary">
+                        Nächste <i class="fas fa-chevron-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Learn Mode -->
+            <div id="learn-page" class="page-content d-none">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Lernmodus</h2>
+                    <div>
+                        <button class="btn btn-outline-secondary">
+                            <i class="fas fa-cog me-1"></i> Optionen
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="learn-mode-container">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Fortschritt: 3/10</span>
+                                <span>Punkte: 120</span>
+                            </div>
+                            <div class="progress learn-progress">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            
+                            <div class="question-container">
+                                <h3>Was bedeutet "quintessential"?</h3>
+                            </div>
+                            
+                            <div class="answer-container">
+                                <div class="answer-option">wesentlich, typisch</div>
+                                <div class="answer-option">fünftes Element</div>
+                                <div class="answer-option">schnell, eilig</div>
