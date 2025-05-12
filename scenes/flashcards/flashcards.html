@@ -1,329 +1,379 @@
-<!-- Flashcards -->
-<div id="flashcards-page" class="page-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Karteikarten</h2>
-        <div>
-            <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#filterModal">
-                <i class="fas fa-filter me-1"></i> Filter
-            </button>
-            <div class="btn-group">
-                <button class="btn btn-primary">Starten</button>
-                <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="visually-hidden">Toggle Dropdown</span>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3a5f99;
+            --primary-dark: #1a356e;
+            --primary-light: #c5d3ed;
+            --accent-color: #ff7e5f;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+
+        /* Topbar */
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            height: 60px; /* Feste Höhe für die Topbar */
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .nav-link {
+            color: white;
+            margin-left: 10px;
+        }
+
+        .btn-outline-light {
+            border-width: 2px;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            min-width: 250px;
+            max-width: 250px;
+            background: #343a40;
+            color: #fff;
+            transition: all 0.3s;
+            height: calc(100vh - 60px); /* Höhe minus Topbar */
+            position: fixed;
+            top: 60px; /* Direkt unter der Topbar */
+            z-index: 999;
+        }
+
+        #sidebar.active {
+            margin-left: -250px;
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background: #212529;
+        }
+
+        #sidebar ul.components {
+            padding: 20px 0;
+            border-bottom: 1px solid #47748b;
+        }
+
+        #sidebar ul li a {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        #sidebar ul li a:hover {
+            background: var(--primary-color);
+            color: #fff;
+        }
+
+        /* Inhalt */
+        #content {
+            width: calc(100% - 250px);
+            min-height: calc(100vh - 60px);
+            transition: all 0.3s;
+            position: absolute;
+            top: 60px; /* Direkt unter der Topbar */
+            right: 0;
+        }
+
+        /* Flashcard-Styling */
+        .flashcard-container {
+            perspective: 1000px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .flashcard-front {
+            background-color: #fff;
+        }
+
+        .flashcard-back {
+            background-color: var(--primary-light);
+            transform: rotateY(180deg);
+        }
+
+        .word {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .translation {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+
+        .examples {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .btn-card-action {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-card-action:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes cardSuccess {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0); }
+        }
+
+        @keyframes cardFailure {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .card-success {
+            animation: cardSuccess 0.6s ease;
+        }
+
+        .card-failure {
+            animation: cardFailure 0.6s ease;
+        }
+
+        /* Weniger schöne Überschrift */
+        .flashcard-header {
+            background-color: #d3d3d3;
+            color: #333;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Topbar -->
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark py-2">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">EngliFy</a>
+                <div class="ms-auto auth-buttons">
+                    <a href="#" class="btn btn-outline-light me-2">Einloggen</a>
+                    <a href="#" class="btn btn-light">Registrieren</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Sidebar -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>Menü</h3>
+        </div>
+        <ul class="list-unstyled components">
+            <li><a href="/scenes/dashboard/dashboard.html"><i class="fas fa-home me-2"></i> Dashboard</a></li>
+            <li><a href="#"><i class="fas fa-layer-group me-2"></i> Karteikarten</a></li>
+            <li><a href="#"><i class="fas fa-graduation-cap me-2"></i> Lernmodus</a></li>
+            <li><a href="#"><i class="fas fa-book me-2"></i> Vokabellisten</a></li>
+            <li><a href="#"><i class="fas fa-chart-bar me-2"></i> Statistiken</a></li>
+            <li><a href="#"><i class="fas fa-cog me-2"></i> Einstellungen</a></li>
+            <li><a href="#"><i class="fas fa-question-circle me-2"></i> Hilfe</a></li>
+        </ul>
+    </nav>
+
+    <!-- Flashcards Inhalt -->
+    <div id="content" class="container mt-4">
+        <div class="flashcard-header">
+            Karteikarten
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <button class="btn btn-outline-secondary me-2" onclick="shuffleCards()">
+                    <i class="fas fa-random me-1"></i> Mischen
                 </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#">Zufällige Reihenfolge</a></li>
-                    <li><a class="dropdown-item" href="#">Schwierigste zuerst</a></li>
-                    <li><a class="dropdown-item" href="#">Neueste zuerst</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#">Nur unbekannte</a></li>
-                </ul>
+                <button class="btn btn-primary">Starten</button>
             </div>
         </div>
-    </div>
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <select class="form-select" id="deckSelect">
-                        <option selected>Business English (42 Karten)</option>
-                        <option>Reisen & Urlaub (36 Karten)</option>
-                        <option>Akademisches Englisch (28 Karten)</option>
-                        <option>Alltagsenglisch (40 Karten)</option>
-                        <option>Alle Karten (146)</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <div class="progress mt-2">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <select class="form-select" id="deckSelect">
+                            <option selected>Business English (42 Karten)</option>
+                            <option>Reisen & Urlaub (36 Karten)</option>
+                            <option>Akademisches Englisch (28 Karten)</option>
+                            <option>Alltagsenglisch (40 Karten)</option>
+                            <option>Alle Karten (146)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="progress mt-2">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="flashcard card mb-4" onclick="this.classList.toggle('flipped')">
-        <div class="card-body flashcard-inner">
-            <div class="flashcard-front">
-                <div class="word">quintessential</div>
-                <div class="hint">[kwin-tuh-sen-shuhl]</div>
-                <p class="text-muted mt-3">Klicken um umzudrehen</p>
-            </div>
-            <div class="flashcard-back">
-                <div class="translation">wesentlich, typisch</div>
-                <div class="examples">
-                    <p><strong>Beispiel:</strong> This restaurant offers the quintessential Italian dining experience.</p>
-                    <p><em>Dieses Restaurant bietet das typische italienische Esserlebnis.</em></p>
+
+        <div class="flashcard-container">
+            <div class="flashcard card mb-4" onclick="this.classList.toggle('flipped')">
+                <div class="card-body flashcard-inner">
+                    <div class="flashcard-front">
+                        <div class="word">quintessential</div>
+                    </div>
+                    <div class="flashcard-back">
+                        <div class="translation">wesentlich, typisch</div>
+                        <div class="examples">
+                            <p><strong>Beispiel:</strong> This restaurant offers the quintessential Italian dining experience.</p>
+                            <p><em>Dieses Restaurant bietet das typische italienische Esserlebnis.</em></p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="card-actions mb-4">
-        <button class="btn btn-danger btn-card-action" title="Schwierig">
-            <i class="fas fa-times"></i>
-        </button>
-        <button class="btn btn-warning btn-card-action" title="Wiederholen">
-            <i class="fas fa-redo"></i>
-        </button>
-        <button class="btn btn-info btn-card-action" title="Notiz hinzufügen">
-            <i class="fas fa-sticky-note"></i>
-        </button>
-        <button class="btn btn-success btn-card-action" title="Gewusst">
-            <i class="fas fa-check"></i>
-        </button>
-    </div>
-    
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <button class="btn btn-outline-secondary">
-            <i class="fas fa-chevron-left me-1"></i> Vorherige
-        </button>
-        <div>Karte 1 von 42</div>
-        <button class="btn btn-outline-primary">
-            Nächste <i class="fas fa-chevron-right ms-1"></i>
-        </button>
-    </div>
-</div>
 
-<!-- Filter Modal -->
-<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="filterModalLabel">Karteikarten filtern</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="difficultyFilter" class="form-label">Schwierigkeitsgrad</label>
-                    <select class="form-select" id="difficultyFilter">
-                        <option value="all" selected>Alle</option>
-                        <option value="easy">Leicht</option>
-                        <option value="medium">Mittel</option>
-                        <option value="hard">Schwer</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="statusFilter" class="form-label">Status</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="all" selected>Alle</option>
-                        <option value="new">Neu</option>
-                        <option value="learning">In Bearbeitung</option>
-                        <option value="mastered">Gemeistert</option>
-                        <option value="difficult">Schwierig</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="levelFilter" class="form-label">Sprachniveau</label>
-                    <select class="form-select" id="levelFilter">
-                        <option value="all" selected>Alle</option>
-                        <option value="a1">A1</option>
-                        <option value="a2">A2</option>
-                        <option value="b1">B1</option>
-                        <option value="b2">B2</option>
-                        <option value="c1">C1</option>
-                        <option value="c2">C2</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="lastSeenFilter" class="form-label">Zuletzt gesehen</label>
-                    <select class="form-select" id="lastSeenFilter">
-                        <option value="all" selected>Alle</option>
-                        <option value="today">Heute</option>
-                        <option value="week">Diese Woche</option>
-                        <option value="month">Diesen Monat</option>
-                        <option value="older">Älter</option>
-                    </select>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="button" class="btn btn-primary">Anwenden</button>
-            </div>
+        <div class="card-actions mb-4">
+            <button class="btn btn-danger btn-card-action" title="Schwierig" onclick="markDifficult(event)">
+                <i class="fas fa-times"></i>
+            </button>
+            <button class="btn btn-warning btn-card-action" title="Wiederholen">
+                <i class="fas fa-redo"></i>
+            </button>
+            <button class="btn btn-success btn-card-action" title="Gewusst" onclick="markKnown(event)">
+                <i class="fas fa-check"></i>
+            </button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <button class="btn btn-outline-secondary" onclick="prevCard()">
+                <i class="fas fa-chevron-left me-1"></i> Vorherige
+            </button>
+            <div id="card-index">Karte 1 von 42</div>
+            <button class="btn btn-outline-primary" onclick="nextCard()">
+                Nächste <i class="fas fa-chevron-right ms-1"></i>
+            </button>
         </div>
     </div>
-</div>
 
-<style>
-    /* Farbvariablen von der Hauptseite übernehmen */
-    :root {
-        --primary-color: #3a5f99;
-        --primary-dark: #1a356e;
-        --primary-light: #c5d3ed;
-        --accent-color: #ff7e5f;
-        --success-color: #28a745;
-        --warning-color: #ffc107;
-        --danger-color: #dc3545;
-    }
-    
-    /* Karten-Design anpassen */
-    .flashcard {
-        min-height: 200px;
-        perspective: 1000px;
-        cursor: pointer;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s;
-    }
-    
-    .flashcard:hover {
-        transform: translateY(-5px);
-    }
-    
-    .flashcard-inner {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        transition: transform 0.8s;
-        transform-style: preserve-3d;
-    }
-    
-    .flashcard.flipped .flashcard-inner {
-        transform: rotateY(180deg);
-    }
-    
-    .flashcard-front, .flashcard-back {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        padding: 20px;
-    }
-    
-    .flashcard-back {
-        transform: rotateY(180deg);
-        background-color: var(--primary-light);
-    }
-    
-    .word {
-        font-size: 2rem;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: var(--primary-dark);
-    }
-    
-    .hint {
-        font-style: italic;
-        color: #6c757d;
-    }
-    
-    .translation {
-        font-size: 1.8rem;
-        font-weight: bold;
-        color: var(--primary-dark);
-        margin-bottom: 10px;
-    }
-    
-    .examples {
-        font-size: 0.9rem;
-        color: #495057;
-    }
-    
-    .card-actions {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 20px;
-    }
-    
-    .btn-card-action {
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s;
-    }
-    
-    .btn-card-action:hover {
-        transform: scale(1.1);
-    }
-    
-    /* Button-Styling anpassen */
-    .btn-primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-    
-    .btn-primary:hover {
-        background-color: var(--primary-dark);
-        border-color: var(--primary-dark);
-    }
-    
-    .btn-outline-primary {
-        color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-    
-    .btn-outline-primary:hover {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-    
-    /* Animation für Karteikarten */
-    @keyframes cardSuccess {
-        0% { transform: translateY(0); }
-        50% { transform: translateY(-20px); }
-        100% { transform: translateY(0); }
-    }
-    
-    @keyframes cardFailure {
-        0% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        50% { transform: translateX(10px); }
-        75% { transform: translateX(-10px); }
-        100% { transform: translateX(0); }
-    }
-    
-    .card-success {
-        animation: cardSuccess 0.6s ease;
-    }
-    
-    .card-failure {
-        animation: cardFailure 0.6s ease;
-    }
-    
-    /* Modal-Design anpassen */
-    .modal-header {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    
-    .modal-title {
-        color: white;
-    }
-    
-    .btn-close {
-        filter: brightness(0) invert(1);
-    }
-</style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentCard = 0;
+        const totalCards = 42; // Beispielwert, sollte dynamisch sein
+        let cards = [
+            { front: "quintessential", back: "wesentlich, typisch" },
+            // Weitere Karten hier hinzufügen
+        ];
 
-<script>
-    // Zum Umdrehen der Karteikarte
-    document.addEventListener('DOMContentLoaded', function() {
-        // Karteikarten-Animation
-        document.querySelector('.btn-success').addEventListener('click', function(e) {
-            e.stopPropagation();
+        function nextCard() {
+            if (currentCard < totalCards - 1) {
+                currentCard++;
+                updateCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentCard > 0) {
+                currentCard--;
+                updateCard();
+            }
+        }
+
+        function updateCard() {
+            const flashcard = document.querySelector('.flashcard');
+            flashcard.classList.remove('flipped');
+            document.querySelector('.word').textContent = cards[currentCard].front;
+            document.querySelector('.translation').textContent = cards[currentCard].back;
+            document.getElementById('card-index').textContent = `Karte ${currentCard + 1} von ${totalCards}`;
+        }
+
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+            currentCard = 0;
+            updateCard();
+        }
+
+        function markKnown(event) {
+            event.stopPropagation();
             const flashcard = document.querySelector('.flashcard');
             flashcard.classList.add('card-success');
             setTimeout(() => {
                 flashcard.classList.remove('card-success');
             }, 600);
-        });
-        
-        document.querySelector('.btn-danger').addEventListener('click', function(e) {
-            e.stopPropagation();
+        }
+
+        function markDifficult(event) {
+            event.stopPropagation();
             const flashcard = document.querySelector('.flashcard');
             flashcard.classList.add('card-failure');
             setTimeout(() => {
                 flashcard.classList.remove('card-failure');
             }, 600);
-        });
-    });
-</script>
+        }
+    </script>
+</body>
+</html>
