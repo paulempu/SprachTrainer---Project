@@ -18,7 +18,7 @@
             --warning-color: #ffc107;
             --danger-color: #dc3545;
         }
-        
+       
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
@@ -26,30 +26,30 @@
             flex-direction: column;
             background-color: #f8f9fa;
         }
-        
+       
         .navbar {
             background-color: var(--primary-color);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+       
         .navbar-brand {
             font-size: 1.8rem;
             font-weight: 700;
             position: relative;
             display: inline-block;
         }
-        
+       
         .brand-name {
             color: #ffffff;
             animation: pulsate 2s infinite alternate;
         }
-        
+       
         .brand-com {
             color: var(--primary-light);
             font-weight: 400;
             animation: pulsate 2s infinite alternate-reverse;
         }
-        
+       
         @keyframes pulsate {
             0% {
                 transform: scale(1);
@@ -64,16 +64,16 @@
                 opacity: 1;
             }
         }
-        
+       
         .nav-link {
             color: white;
             margin-left: 10px;
         }
-        
+       
         .btn-outline-light {
             border-width: 2px;
         }
-        
+       
         #sidebar {
             min-width: 250px;
             max-width: 250px;
@@ -84,21 +84,21 @@
             position: fixed;
             z-index: 999;
         }
-        
+       
         #sidebar.active {
             margin-left: -250px;
         }
-        
+       
         #sidebar .sidebar-header {
             padding: 20px;
             background: #212529;
         }
-        
+       
         #sidebar ul.components {
             padding: 20px 0;
             border-bottom: 1px solid #47748b;
         }
-        
+       
         #sidebar ul li a {
             padding: 15px 20px;
             font-size: 1.1em;
@@ -107,17 +107,17 @@
             text-decoration: none;
             transition: all 0.3s;
         }
-        
+       
         #sidebar ul li a:hover {
             background: var(--primary-color);
             color: #fff;
         }
-        
+       
         #sidebar ul li.active > a {
             background: var(--primary-color);
             color: #fff;
         }
-        
+       
         #content {
             width: calc(100% - 250px);
             min-height: calc(100vh - 62px);
@@ -126,84 +126,84 @@
             top: 62px;
             right: 0;
         }
-        
+       
         #content.active {
             width: 100%;
         }
-        
+       
         #sidebarCollapse {
             background: transparent;
             color: white;
             border: none;
             font-size: 1.5rem;
         }
-        
+       
         .card {
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
             margin-bottom: 20px;
         }
-        
+       
         .card:hover {
             transform: translateY(-5px);
         }
-        
+       
         .quick-stat {
             padding: 15px;
             text-align: center;
             border-radius: 10px;
             color: white;
         }
-        
+       
         .quick-stat.bg-primary {
             background: var(--primary-color) !important;
         }
-        
+       
         .quick-stat.bg-success {
             background: var(--success-color) !important;
         }
-        
+       
         .quick-stat.bg-warning {
             background: var(--warning-color) !important;
             color: #212529;
         }
-        
+       
         .quick-stat.bg-danger {
             background: var(--danger-color) !important;
         }
-        
+       
         .stat-icon {
             font-size: 2rem;
             margin-bottom: 10px;
         }
-        
+       
         .stat-number {
             font-size: 1.8rem;
             font-weight: bold;
         }
-        
+       
         .stat-label {
             font-size: 0.9rem;
             opacity: 0.8;
         }
-        
+       
         .card-title {
             color: var(--primary-dark);
             font-weight: 600;
         }
-        
+       
         .progress {
             height: 10px;
             border-radius: 5px;
         }
-        
+       
         .flashcard {
             min-height: 200px;
             perspective: 1000px;
             cursor: pointer;
         }
-        
+       
         .flashcard-inner {
             position: relative;
             width: 100%;
@@ -211,11 +211,11 @@
             transition: transform 0.8s;
             transform-style: preserve-3d;
         }
-        
+       
         .flashcard.flipped .flashcard-inner {
             transform: rotateY(180deg);
         }
-        
+       
         .flashcard-front, .flashcard-back {
             position: absolute;
             width: 100%;
@@ -228,42 +228,42 @@
             flex-direction: column;
             padding: 20px;
         }
-        
+       
         .flashcard-back {
             transform: rotateY(180deg);
             background-color: var(--primary-light);
         }
-        
+       
         .word {
             font-size: 2rem;
             font-weight: bold;
             margin-bottom: 10px;
             color: var(--primary-dark);
         }
-        
+       
         .hint {
             font-style: italic;
             color: #6c757d;
         }
-        
+       
         .translation {
             font-size: 1.8rem;
             font-weight: bold;
             color: var(--primary-dark);
             margin-bottom: 10px;
         }
-        
+       
         .examples {
             font-size: 0.9rem;
             color: #495057;
         }
-        
+       
         .card-actions {
             display: flex;
             justify-content: space-around;
             margin-top: 20px;
         }
-        
+       
         .btn-card-action {
             border-radius: 50%;
             width: 40px;
@@ -273,20 +273,20 @@
             justify-content: center;
             transition: all 0.3s;
         }
-        
+       
         .btn-card-action:hover {
             transform: scale(1.1);
         }
-        
+       
         .vocabulary-list .list-group-item {
             transition: all 0.3s;
             cursor: pointer;
         }
-        
+       
         .vocabulary-list .list-group-item:hover {
             background-color: var(--primary-light);
         }
-        
+       
         @media (max-width: 768px) {
             #sidebar {
                 margin-left: -250px;
@@ -314,7 +314,7 @@
                 text-align: center;
             }
         }
-
+ 
         .streak-day {
             width: 30px;
             height: 30px;
@@ -326,28 +326,28 @@
             font-size: 0.8rem;
             font-weight: bold;
         }
-
+ 
         .streak-active {
             background-color: var(--success-color);
             color: white;
         }
-
+ 
         .streak-inactive {
             background-color: #e9ecef;
             color: #adb5bd;
         }
-
+ 
         .streak-today {
             border: 2px solid var(--primary-dark);
         }
-
+ 
         /* Animation für Karteikarten */
         @keyframes cardSuccess {
             0% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
             100% { transform: translateY(0); }
         }
-
+ 
         @keyframes cardFailure {
             0% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
@@ -355,19 +355,19 @@
             75% { transform: translateX(-10px); }
             100% { transform: translateX(0); }
         }
-
+ 
         .card-success {
             animation: cardSuccess 0.6s ease;
         }
-
+ 
         .card-failure {
             animation: cardFailure 0.6s ease;
         }
-
+ 
         .custom-control.custom-checkbox {
             margin-bottom: 10px;
         }
-
+ 
         .theme-item {
             width: 30px;
             height: 30px;
@@ -376,33 +376,33 @@
             cursor: pointer;
             border: 2px solid transparent;
         }
-
+ 
         .theme-item.active {
             border-color: #000;
         }
-
+ 
         /* Lernmodus Styles */
         .learn-mode-container {
             max-width: 700px;
             margin: 0 auto;
         }
-
+ 
         .learn-progress {
             height: 8px;
             margin-bottom: 30px;
         }
-
+ 
         .question-container {
             text-align: center;
             margin-bottom: 30px;
         }
-
+ 
         .answer-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
-
+ 
         .answer-option {
             padding: 15px;
             border-radius: 8px;
@@ -410,22 +410,22 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
+ 
         .answer-option:hover {
             border-color: var(--primary-color);
             background-color: #f8f9fa;
         }
-
+ 
         .answer-option.selected {
             border-color: var(--primary-color);
             background-color: var(--primary-light);
         }
-
+ 
         .answer-option.correct {
             border-color: var(--success-color);
             background-color: rgba(40, 167, 69, 0.2);
         }
-
+ 
         .answer-option.incorrect {
             border-color: var(--danger-color);
             background-color: rgba(220, 53, 69, 0.2);
@@ -439,11 +439,11 @@
                 <button type="button" id="sidebarCollapse" class="me-2">
                     <i class="fas fa-bars"></i>
                 </button>
-                
+               
                 <a class="navbar-brand" href="index.php">
                     <span class="brand-name">EngliFy</span><span class="brand-com">.com</span>
                 </a>
-                
+               
                 <div class="ms-auto auth-buttons">
                     <a href="einloggen.php" class="btn btn-outline-light me-2">Einloggen</a>
                     <a href="registrieren.php" class="btn btn-light">Registrieren</a>
@@ -451,14 +451,14 @@
             </div>
         </nav>
     </header>
-
+ 
     <div class="wrapper d-flex">
         <!-- Sidebar -->
         <nav id="sidebar">
             <div class="sidebar-header">
                 <h3>Menu</h3>
             </div>
-
+ 
             <ul class="list-unstyled components">
                 <li class="active">
                     <a href="#" data-page="dashboard"><i class="fas fa-home me-2"></i> Dashboard</a>
@@ -483,13 +483,13 @@
                 </li>
             </ul>
         </nav>
-
+ 
         <!-- Page Content -->
         <div id="content" class="p-4">
             <!-- Dashboard -->
             <div id="dashboard-page" class="page-content">
                 <h2 class="mb-4">Dashboard</h2>
-                
+               
                 <div class="row mb-4">
                     <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
                         <div class="quick-stat bg-primary">
@@ -528,69 +528,9 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="row">
-                    <div class="col-lg-8 mb-4">
-                        <div class="card h-100">
-                            <div class="card-header bg-white">
-                                <h5 class="card-title mb-0">Tägliche Lernstatistik</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="learningStatsChart" height="250"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-lg-4">
-                        <div class="card mb-4">
-                            <div class="card-header bg-white">
-                                <h5 class="card-title mb-0">Lernstreak</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex">
-                                        <div class="streak-day streak-active">M</div>
-                                        <div class="streak-day streak-active">D</div>
-                                        <div class="streak-day streak-active">M</div>
-                                        <div class="streak-day streak-active streak-today">D</div>
-                                        <div class="streak-day streak-inactive">F</div>
-                                        <div class="streak-day streak-inactive">S</div>
-                                        <div class="streak-day streak-inactive">S</div>
-                                    </div>
-                                    <span class="badge bg-success">4 Tage 🔥</span>
-                                </div>
-                                <div class="text-center">
-                                    <div class="h5 mb-0">Noch heute lernen!</div>
-                                    <p class="text-muted small">Um deine Streak fortzusetzen</p>
-                                    <a href="#" class="btn btn-primary" data-page="flashcards">Jetzt lernen</a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header bg-white">
-                                <h5 class="card-title mb-0">Dein Fortschritt</h5>
-                            </div>
-                            <div class="card-body">
-                                <h6>Elementarer Sprachgebrauch (A1-A2)</h6>
-                                <div class="progress mb-3">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                
-                                <h6>Selbständige Sprachverwendung (B1-B2)</h6>
-                                <div class="progress mb-3">
-                                    <div class="progress-bar bg-info" role="progressbar" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                                
-                                <h6>Kompetente Sprachverwendung (C1-C2)</h6>
-                                <div class="progress">
-                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 15%" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
+               
+                <!-- Der entfernte Block stand hier (Tägliche Lernstatistik, Lernstreak, Dein Fortschritt) -->
+               
                 <div class="row mt-4">
                     <div class="col-md-6 mb-4 mb-md-0">
                         <div class="card h-100">
@@ -625,7 +565,7 @@
                             </div>
                         </div>
                     </div>
-                    
+                   
                     <div class="col-md-6">
                         <div class="card h-100">
                             <div class="card-header d-flex justify-content-between align-items-center bg-white">
@@ -661,7 +601,7 @@
                     </div>
                 </div>
             </div>
-            
+           
             <!-- Flashcards -->
             <div id="flashcards-page" class="page-content d-none">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -685,7 +625,7 @@
                         </div>
                     </div>
                 </div>
-                
+               
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="row mb-3">
@@ -705,7 +645,7 @@
                         </div>
                     </div>
                 </div>
-                
+               
                 <div class="flashcard card mb-4" onclick="this.classList.toggle('flipped')">
                     <div class="card-body flashcard-inner">
                         <div class="flashcard-front">
@@ -722,7 +662,7 @@
                         </div>
                     </div>
                 </div>
-                
+               
                 <div class="card-actions mb-4">
                     <button class="btn btn-danger btn-card-action" title="Schwierig">
                         <i class="fas fa-times"></i>
@@ -737,7 +677,7 @@
                         <i class="fas fa-check"></i>
                     </button>
                 </div>
-                
+               
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <button class="btn btn-outline-secondary">
                         <i class="fas fa-chevron-left me-1"></i> Vorherige
@@ -748,7 +688,7 @@
                     </button>
                 </div>
             </div>
-            
+           
             <!-- Learn Mode -->
             <div id="learn-page" class="page-content d-none">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -759,7 +699,7 @@
                         </button>
                     </div>
                 </div>
-                
+               
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="learn-mode-container">
@@ -770,12 +710,21 @@
                             <div class="progress learn-progress">
                                 <div class="progress-bar bg-success" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
-                            
+                           
                             <div class="question-container">
                                 <h3>Was bedeutet "quintessential"?</h3>
                             </div>
-                            
+                           
                             <div class="answer-container">
                                 <div class="answer-option">wesentlich, typisch</div>
                                 <div class="answer-option">fünftes Element</div>
                                 <div class="answer-option">schnell, eilig</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

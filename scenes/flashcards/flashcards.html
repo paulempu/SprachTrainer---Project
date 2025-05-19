@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcards</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>EngliFy.com - Karteikarten</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --primary-color: #3a5f99;
@@ -16,7 +18,7 @@
             --warning-color: #ffc107;
             --danger-color: #dc3545;
         }
-
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
@@ -24,56 +26,63 @@
             flex-direction: column;
             background-color: #f8f9fa;
         }
-
-        /* Topbar */
+        
         .navbar {
             background-color: var(--primary-color);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            height: 60px; /* Feste Höhe für die Topbar */
         }
-
+        
         .navbar-brand {
             font-size: 1.8rem;
             font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .brand-name {
             color: #ffffff;
         }
-
+        
+        .brand-com {
+            color: var(--primary-light);
+            font-weight: 400;
+        }
+        
         .nav-link {
             color: white;
             margin-left: 10px;
         }
-
+        
         .btn-outline-light {
             border-width: 2px;
         }
-
-        /* Sidebar */
+        
         #sidebar {
             min-width: 250px;
             max-width: 250px;
             background: #343a40;
             color: #fff;
             transition: all 0.3s;
-            height: calc(100vh - 60px); /* Höhe minus Topbar */
+            height: calc(100vh - 62px);
             position: fixed;
-            top: 60px; /* Direkt unter der Topbar */
+            top: 62px;
             z-index: 999;
         }
-
+        
         #sidebar.active {
             margin-left: -250px;
         }
-
+        
         #sidebar .sidebar-header {
             padding: 20px;
             background: #212529;
         }
-
+        
         #sidebar ul.components {
             padding: 20px 0;
             border-bottom: 1px solid #47748b;
         }
-
+        
         #sidebar ul li a {
             padding: 15px 20px;
             font-size: 1.1em;
@@ -82,30 +91,45 @@
             text-decoration: none;
             transition: all 0.3s;
         }
-
+        
         #sidebar ul li a:hover {
             background: var(--primary-color);
             color: #fff;
         }
-
-        /* Inhalt */
+        
+        #sidebar ul li.active > a {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        
         #content {
             width: calc(100% - 250px);
-            min-height: calc(100vh - 60px);
+            min-height: calc(100vh - 62px);
             transition: all 0.3s;
             position: absolute;
-            top: 60px; /* Direkt unter der Topbar */
+            top: 62px;
             right: 0;
         }
-
-        /* Flashcard-Styling */
+        
+        #content.active {
+            width: 100%;
+        }
+        
+        #sidebarCollapse {
+            background: transparent;
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+        }
+        
+        /* Flashcard Specific Styles */
         .flashcard-container {
             perspective: 1000px;
         }
 
         .flashcard {
             width: 100%;
-            height: 300px;
+            height: 400px;
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.8s;
@@ -128,6 +152,7 @@
             justify-content: center;
             flex-direction: column;
             padding: 20px;
+            border-radius: 10px;
         }
 
         .flashcard-front {
@@ -140,21 +165,27 @@
         }
 
         .word {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 10px;
             color: var(--primary-dark);
+        }
+
+        .hint {
+            font-style: italic;
+            color: #6c757d;
+            margin-bottom: 15px;
         }
 
         .translation {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: bold;
             color: var(--primary-dark);
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .examples {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: #495057;
         }
 
@@ -166,214 +197,445 @@
 
         .btn-card-action {
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
+            font-size: 1.2rem;
         }
 
         .btn-card-action:hover {
             transform: scale(1.1);
         }
 
-        @keyframes cardSuccess {
-            0% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0); }
+        /* Card Navigation Styles */
+        .card-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
         }
 
-        @keyframes cardFailure {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-10px); }
-            100% { transform: translateX(0); }
-        }
-
-        .card-success {
-            animation: cardSuccess 0.6s ease;
-        }
-
-        .card-failure {
-            animation: cardFailure 0.6s ease;
-        }
-
-        /* Weniger schöne Überschrift */
-        .flashcard-header {
-            background-color: #d3d3d3;
-            color: #333;
-            padding: 10px;
-            text-align: center;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px;
+            }
+            #sidebar.active {
+                margin-left: 0;
+            }
+            #content {
+                width: 100%;
+            }
+            #content.active {
+                width: calc(100% - 250px);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Topbar -->
     <header>
         <nav class="navbar navbar-expand-md navbar-dark py-2">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#">EngliFy</a>
+                <button type="button" id="sidebarCollapse" class="me-2">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <a class="navbar-brand" href="index.php">
+                    <span class="brand-name">EngliFy</span><span class="brand-com">.com</span>
+                </a>
+                
                 <div class="ms-auto auth-buttons">
-                    <a href="#" class="btn btn-outline-light me-2">Einloggen</a>
-                    <a href="#" class="btn btn-light">Registrieren</a>
+                    <a href="einloggen.php" class="btn btn-outline-light me-2">Einloggen</a>
+                    <a href="registrieren.php" class="btn btn-light">Registrieren</a>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- Sidebar -->
-    <nav id="sidebar">
-        <div class="sidebar-header">
-            <h3>Menü</h3>
-        </div>
-        <ul class="list-unstyled components">
-            <li><a href="/scenes/dashboard/dashboard.html"><i class="fas fa-home me-2"></i> Dashboard</a></li>
-            <li><a href="#"><i class="fas fa-layer-group me-2"></i> Karteikarten</a></li>
-            <li><a href="#"><i class="fas fa-graduation-cap me-2"></i> Lernmodus</a></li>
-            <li><a href="#"><i class="fas fa-book me-2"></i> Vokabellisten</a></li>
-            <li><a href="#"><i class="fas fa-chart-bar me-2"></i> Statistiken</a></li>
-            <li><a href="#"><i class="fas fa-cog me-2"></i> Einstellungen</a></li>
-            <li><a href="#"><i class="fas fa-question-circle me-2"></i> Hilfe</a></li>
-        </ul>
-    </nav>
-
-    <!-- Flashcards Inhalt -->
-    <div id="content" class="container mt-4">
-        <div class="flashcard-header">
-            Karteikarten
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <button class="btn btn-outline-secondary me-2" onclick="shuffleCards()">
-                    <i class="fas fa-random me-1"></i> Mischen
-                </button>
-                <button class="btn btn-primary">Starten</button>
+    <div class="wrapper d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>Menü</h3>
             </div>
-        </div>
 
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <select class="form-select" id="deckSelect">
-                            <option selected>Business English (42 Karten)</option>
-                            <option>Reisen & Urlaub (36 Karten)</option>
-                            <option>Akademisches Englisch (28 Karten)</option>
-                            <option>Alltagsenglisch (40 Karten)</option>
-                            <option>Alle Karten (146)</option>
-                        </select>
+            <ul class="list-unstyled components">
+                <li>
+                    <a href="/scenes/dashboard/dashboard.html" data-page="dashboard"><i class="fas fa-home me-2"></i> Dashboard</a>
+                </li>
+                <li class="active">
+                    <a href="#" data-page="flashcards"><i class="fas fa-layer-group me-2"></i> Karteikarten</a>
+                </li>
+                <li>
+                    <a href="#" data-page="learn"><i class="fas fa-graduation-cap me-2"></i> Lernmodus</a>
+                </li>
+                <li>
+                    <a href="#" data-page="vocabulary"><i class="fas fa-book me-2"></i> Vokabellisten</a>
+                </li>
+                <li>
+                    <a href="#" data-page="stats"><i class="fas fa-chart-bar me-2"></i> Statistiken</a>
+                </li>
+                <li>
+                    <a href="#" data-page="settings"><i class="fas fa-cog me-2"></i> Einstellungen</a>
+                </li>
+                <li>
+                    <a href="#" data-page="help"><i class="fas fa-question-circle me-2"></i> Hilfe</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content" class="p-4">
+            <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="learn-tab" data-bs-toggle="tab" data-bs-target="#learn" type="button" role="tab" aria-controls="learn" aria-selected="true">Lernen</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="vocab-tab" data-bs-toggle="tab" data-bs-target="#vocab" type="button" role="tab" aria-controls="vocab" aria-selected="false">Vokabeln verwalten</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="false">Vokabel hinzufügen</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="myTabContent">
+                <!-- Lernen Tab -->
+                <div class="tab-pane fade show active" id="learn" role="tabpanel" aria-labelledby="learn-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Karteikarten</h2>
+                        <div>
+                            <button class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-filter me-1"></i> Filter
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-primary">Starten</button>
+                                <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">Zufällige Reihenfolge</a></li>
+                                    <li><a class="dropdown-item" href="#">Schwierigste zuerst</a></li>
+                                    <li><a class="dropdown-item" href="#">Neueste zuerst</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#">Nur unbekannte</a></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="progress mt-2">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <select class="form-select" id="deckSelect">
+                                        <option selected>Business English (42 Karten)</option>
+                                        <option>Reisen & Urlaub (36 Karten)</option>
+                                        <option>Akademisches Englisch (28 Karten)</option>
+                                        <option>Alle Karten (146)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="progress mt-2">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Vokabeln verwalten Tab -->
+                <div class="tab-pane fade" id="vocab" role="tabpanel" aria-labelledby="vocab-tab">
+                    <h2 class="mb-4">Vokabelliste</h2>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Business English</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary me-2">
+                                    <i class="fas fa-file-export me-1"></i> Exportieren
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-file-import me-1"></i> Importieren
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Englisch</th>
+                                            <th>Deutsch</th>
+                                            <th>Aussprache</th>
+                                            <th>Status</th>
+                                            <th>Aktionen</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>quintessential</td>
+                                            <td>wesentlich, typisch</td>
+                                            <td>[kwin-tuh-sen-shuhl]</td>
+                                            <td><span class="badge bg-warning">Neu</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>resilient</td>
+                                            <td>belastbar, widerstandsfähig</td>
+                                            <td>[ri-zil-yuhnt]</td>
+                                            <td><span class="badge bg-success">Gemeistert</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>implement</td>
+                                            <td>umsetzen, implementieren</td>
+                                            <td>[im-pluh-ment]</td>
+                                            <td><span class="badge bg-danger">Schwierig</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>acquisition</td>
+                                            <td>Erwerb, Übernahme</td>
+                                            <td>[ak-wuh-zish-uhn]</td>
+                                            <td><span class="badge bg-info">In Bearbeitung</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>facilitate</td>
+                                            <td>erleichtern, ermöglichen</td>
+                                            <td>[fuh-sil-i-teyt]</td>
+                                            <td><span class="badge bg-success">Gemeistert</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <nav aria-label="Vokabelliste Navigation">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item disabled">
+                                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Zurück</a>
+                                    </li>
+                                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#">Weiter</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Vokabel hinzufügen Tab -->
+                <div class="tab-pane fade" id="add" role="tabpanel" aria-labelledby="add-tab">
+                    <h2 class="mb-4">Neue Vokabel hinzufügen</h2>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <form id="addVocabForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="selectDeck" class="form-label">Karteikartendeck</label>
+                                        <select id="selectDeck" class="form-select" required>
+                                            <option value="" selected disabled>Bitte wählen...</option>
+                                            <option value="business">Business English</option>
+                                            <option value="travel">Reisen & Urlaub</option>
+                                            <option value="academic">Akademisches Englisch</option>
+                                            <option value="new">+ Neues Deck erstellen</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6" id="newDeckContainer" style="display: none;">
+                                        <label for="newDeckName" class="form-label">Name des neuen Decks</label>
+                                        <input type="text" class="form-control" id="newDeckName" placeholder="z.B. Technisches Englisch">
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="englishWord" class="form-label">Englisches Wort/Phrase</label>
+                                        <input type="text" class="form-control" id="englishWord" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="germanWord" class="form-label">Deutsche Übersetzung</label>
+                                        <input type="text" class="form-control" id="germanWord" required>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="pronunciation" class="form-label">Aussprache (optional)</label>
+                                        <input type="text" class="form-control" id="pronunciation" placeholder="z.B. [kwin-tuh-sen-shuhl]">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="difficulty" class="form-label">Schwierigkeitsgrad</label>
+                                        <select id="difficulty" class="form-select">
+                                            <option value="easy">Leicht</option>
+                                            <option value="medium" selected>Mittel</option>
+                                            <option value="hard">Schwer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="englishExample" class="form-label">Englisches Beispiel (optional)</label>
+                                    <textarea class="form-control" id="englishExample" rows="2" placeholder="z.B. This restaurant offers the quintessential Italian dining experience."></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="germanExample" class="form-label">Deutsches Beispiel (optional)</label>
+                                    <textarea class="form-control" id="germanExample" rows="2" placeholder="z.B. Dieses Restaurant bietet das typische italienische Esserlebnis."></textarea>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="addAnother">
+                                    <label class="form-check-label" for="addAnother">Nach dem Speichern eine weitere Vokabel hinzufügen</label>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-outline-secondary me-md-2">Abbrechen</button>
+                                    <button type="submit" class="btn btn-primary">Speichern</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Tipps für effektives Vokabellernen</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i> Verwenden Sie ganze Sätze als Beispiele, um den Kontext zu verstehen.</li>
+                                <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i> Fügen Sie die Aussprache hinzu, um die korrekte Betonung zu lernen.</li>
+                                <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i> Organisieren Sie Ihre Vokabeln in thematische Decks für effizienteres Lernen.</li>
+                                <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i> Nutzen Sie den regelmäßigen Lernmodus, um die Wiederholungsintervalle zu optimieren.</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="flashcard-container">
-            <div class="flashcard card mb-4" onclick="this.classList.toggle('flipped')">
-                <div class="card-body flashcard-inner">
-                    <div class="flashcard-front">
+            
+            <div class="flashcard-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-inner flashcard-front">
                         <div class="word">quintessential</div>
+                        <div class="hint">[kwin-tuh-sen-shuhl]</div>
+                        <div class="examples">
+                            <p><strong>Example:</strong> This restaurant offers the quintessential Italian dining experience.</p>
+                        </div>
+                        <p class="text-muted mt-3">Klicken um zu übersetzen</p>
                     </div>
-                    <div class="flashcard-back">
+                    <div class="flashcard-inner flashcard-back">
                         <div class="translation">wesentlich, typisch</div>
                         <div class="examples">
-                            <p><strong>Beispiel:</strong> This restaurant offers the quintessential Italian dining experience.</p>
-                            <p><em>Dieses Restaurant bietet das typische italienische Esserlebnis.</em></p>
+                            <p><strong>Beispiel:</strong> Dieses Restaurant bietet das typische italienische Esserlebnis.</p>
                         </div>
+                        <p class="text-muted mt-3">Klicken um zurückzukehren</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="card-actions mb-4">
-            <button class="btn btn-danger btn-card-action" title="Schwierig" onclick="markDifficult(event)">
-                <i class="fas fa-times"></i>
-            </button>
-            <button class="btn btn-warning btn-card-action" title="Wiederholen">
-                <i class="fas fa-redo"></i>
-            </button>
-            <button class="btn btn-success btn-card-action" title="Gewusst" onclick="markKnown(event)">
-                <i class="fas fa-check"></i>
-            </button>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <button class="btn btn-outline-secondary" onclick="prevCard()">
-                <i class="fas fa-chevron-left me-1"></i> Vorherige
-            </button>
-            <div id="card-index">Karte 1 von 42</div>
-            <button class="btn btn-outline-primary" onclick="nextCard()">
-                Nächste <i class="fas fa-chevron-right ms-1"></i>
-            </button>
+            
+            <div class="card-actions mb-4">
+                <button class="btn btn-danger btn-card-action" title="Nicht gewusst">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button class="btn btn-success btn-card-action" title="Gewusst">
+                    <i class="fas fa-check"></i>
+                </button>
+            </div>
+            
+            <div class="card-navigation">
+                <button class="btn btn-outline-secondary">
+                    <i class="fas fa-chevron-left me-1"></i> Vorherige
+                </button>
+                <div>Karte 1 von 42</div>
+                <button class="btn btn-outline-primary">
+                    Nächste <i class="fas fa-chevron-right ms-1"></i>
+                </button>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentCard = 0;
-        const totalCards = 42; // Beispielwert, sollte dynamisch sein
-        let cards = [
-            { front: "quintessential", back: "wesentlich, typisch" },
-            // Weitere Karten hier hinzufügen
-        ];
-
-        function nextCard() {
-            if (currentCard < totalCards - 1) {
-                currentCard++;
-                updateCard();
+        // Sidebar Toggle
+        document.getElementById('sidebarCollapse').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('content').classList.toggle('active');
+        });
+        
+        // Flashcard flip functionality
+        document.getElementById('flashcard').addEventListener('click', function() {
+            this.classList.toggle('flipped');
+        });
+        
+        // Neues Deck-Formular anzeigen/ausblenden
+        document.getElementById('selectDeck').addEventListener('change', function() {
+            const newDeckContainer = document.getElementById('newDeckContainer');
+            if (this.value === 'new') {
+                newDeckContainer.style.display = 'block';
+                document.getElementById('newDeckName').setAttribute('required', 'required');
+            } else {
+                newDeckContainer.style.display = 'none';
+                document.getElementById('newDeckName').removeAttribute('required');
             }
-        }
-
-        function prevCard() {
-            if (currentCard > 0) {
-                currentCard--;
-                updateCard();
+        });
+        
+        // Vokabel-Formular absenden
+        document.getElementById('addVocabForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hier würde normalerweise der AJAX-Code stehen, um die Vokabel zu speichern
+            // Simuliere erfolgreiche Speicherung
+            const englishWord = document.getElementById('englishWord').value;
+            const germanWord = document.getElementById('germanWord').value;
+            
+            // Erfolgsbenachrichtigung zeigen
+            const alertHTML = `
+                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                    <strong>Erfolg!</strong> Die Vokabel "${englishWord} - ${germanWord}" wurde erfolgreich hinzugefügt.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            this.insertAdjacentHTML('beforebegin', alertHTML);
+            
+            // Formular zurücksetzen wenn nicht "weitere hinzufügen" ausgewählt ist
+            if (!document.getElementById('addAnother').checked) {
+                this.reset();
+                document.getElementById('newDeckContainer').style.display = 'none';
+            } else {
+                // Nur die Wortfelder zurücksetzen, Deck und andere Einstellungen behalten
+                document.getElementById('englishWord').value = '';
+                document.getElementById('germanWord').value = '';
+                document.getElementById('englishExample').value = '';
+                document.getElementById('germanExample').value = '';
             }
-        }
-
-        function updateCard() {
-            const flashcard = document.querySelector('.flashcard');
-            flashcard.classList.remove('flipped');
-            document.querySelector('.word').textContent = cards[currentCard].front;
-            document.querySelector('.translation').textContent = cards[currentCard].back;
-            document.getElementById('card-index').textContent = `Karte ${currentCard + 1} von ${totalCards}`;
-        }
-
-        function shuffleCards() {
-            for (let i = cards.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cards[i], cards[j]] = [cards[j], cards[i]];
-            }
-            currentCard = 0;
-            updateCard();
-        }
-
-        function markKnown(event) {
-            event.stopPropagation();
-            const flashcard = document.querySelector('.flashcard');
-            flashcard.classList.add('card-success');
-            setTimeout(() => {
-                flashcard.classList.remove('card-success');
-            }, 600);
-        }
-
-        function markDifficult(event) {
-            event.stopPropagation();
-            const flashcard = document.querySelector('.flashcard');
-            flashcard.classList.add('card-failure');
-            setTimeout(() => {
-                flashcard.classList.remove('card-failure');
-            }, 600);
-        }
+            
+            // Fokus auf das erste Eingabefeld setzen
+            document.getElementById('englishWord').focus();
+        });
     </script>
 </body>
 </html>
