@@ -125,6 +125,7 @@
         /* Flashcard Specific Styles */
         .flashcard-container {
             perspective: 1000px;
+            margin-top: 30px;
         }
 
         .flashcard {
@@ -169,12 +170,14 @@
             font-weight: bold;
             margin-bottom: 10px;
             color: var(--primary-dark);
+            text-align: center;
         }
 
         .hint {
             font-style: italic;
             color: #6c757d;
             margin-bottom: 15px;
+            text-align: center;
         }
 
         .translation {
@@ -182,17 +185,23 @@
             font-weight: bold;
             color: var(--primary-dark);
             margin-bottom: 15px;
+            text-align: center;
         }
 
         .examples {
             font-size: 1rem;
             color: #495057;
+            text-align: center;
+            padding: 0 15px;
         }
 
         .card-actions {
             display: flex;
             justify-content: space-around;
             margin-top: 20px;
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .btn-card-action {
@@ -218,6 +227,14 @@
             margin-top: 20px;
         }
 
+        /* Toast notification */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             #sidebar {
@@ -233,6 +250,21 @@
                 width: calc(100% - 250px);
             }
         }
+
+        /* Fade animation for cards */
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        /* Hide flashcard section initially */
+        #flashcard-section {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -243,13 +275,13 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 
-                <a class="navbar-brand" href="index.php">
+                <a class="navbar-brand" href="#">
                     <span class="brand-name">EngliFy</span><span class="brand-com">.com</span>
                 </a>
                 
                 <div class="ms-auto auth-buttons">
-                    <a href="einloggen.php" class="btn btn-outline-light me-2">Einloggen</a>
-                    <a href="registrieren.php" class="btn btn-light">Registrieren</a>
+                    <a href="#" class="btn btn-outline-light me-2">Einloggen</a>
+                    <a href="#" class="btn btn-light">Registrieren</a>
                 </div>
             </div>
         </nav>
@@ -264,7 +296,7 @@
 
             <ul class="list-unstyled components">
                 <li>
-                    <a href="/scenes/dashboard/dashboard.html" data-page="dashboard"><i class="fas fa-home me-2"></i> Dashboard</a>
+                    <a href="#" data-page="dashboard"><i class="fas fa-home me-2"></i> Dashboard</a>
                 </li>
                 <li class="active">
                     <a href="#" data-page="flashcards"><i class="fas fa-layer-group me-2"></i> Karteikarten</a>
@@ -304,45 +336,96 @@
             <div class="tab-content" id="myTabContent">
                 <!-- Lernen Tab -->
                 <div class="tab-pane fade show active" id="learn" role="tabpanel" aria-labelledby="learn-tab">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Karteikarten</h2>
-                        <div>
-                            <button class="btn btn-outline-secondary me-2">
-                                <i class="fas fa-filter me-1"></i> Filter
-                            </button>
-                            <div class="btn-group">
-                                <button class="btn btn-primary">Starten</button>
-                                <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <span class="visually-hidden">Toggle Dropdown</span>
+                    <div id="deck-selection">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>Karteikarten</h2>
+                            <div>
+                                <button class="btn btn-outline-secondary me-2" id="filter-btn">
+                                    <i class="fas fa-filter me-1"></i> Filter
                                 </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#">Zufällige Reihenfolge</a></li>
-                                    <li><a class="dropdown-item" href="#">Schwierigste zuerst</a></li>
-                                    <li><a class="dropdown-item" href="#">Neueste zuerst</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="#">Nur unbekannte</a></li>
-                                </ul>
+                                <div class="btn-group">
+                                    <button class="btn btn-primary" id="start-learning">Starten</button>
+                                    <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" data-order="random">Zufällige Reihenfolge</a></li>
+                                        <li><a class="dropdown-item" href="#" data-order="difficult">Schwierigste zuerst</a></li>
+                                        <li><a class="dropdown-item" href="#" data-order="newest">Neueste zuerst</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" data-filter="unknown">Nur unbekannte</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <select class="form-select" id="deckSelect">
+                                            <option value="business" selected>Business English (42 Karten)</option>
+                                            <option value="travel">Reisen & Urlaub (36 Karten)</option>
+                                            <option value="academic">Akademisches Englisch (28 Karten)</option>
+                                            <option value="all">Alle Karten (146)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="progress mt-2">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <select class="form-select" id="deckSelect">
-                                        <option selected>Business English (42 Karten)</option>
-                                        <option>Reisen & Urlaub (36 Karten)</option>
-                                        <option>Akademisches Englisch (28 Karten)</option>
-                                        <option>Alle Karten (146)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="progress mt-2">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65% gemeistert</div>
+                    <!-- Flashcard Section -->
+                    <div id="flashcard-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 id="deck-title">Business English</h2>
+                            <button class="btn btn-outline-secondary" id="back-to-decks">
+                                <i class="fas fa-arrow-left me-1"></i> Zurück zur Übersicht
+                            </button>
+                        </div>
+                        
+                        <div class="flashcard-container">
+                            <div class="flashcard" id="flashcard">
+                                <div class="flashcard-inner flashcard-front">
+                                    <div class="word" id="current-word">quintessential</div>
+                                    <div class="hint" id="current-hint">[kwin-tuh-sen-shuhl]</div>
+                                    <div class="examples" id="current-example">
+                                        <p><strong>Example:</strong> This restaurant offers the quintessential Italian dining experience.</p>
                                     </div>
+                                    <p class="text-muted mt-3">Klicken um zu übersetzen</p>
+                                </div>
+                                <div class="flashcard-inner flashcard-back">
+                                    <div class="translation" id="current-translation">wesentlich, typisch</div>
+                                    <div class="examples" id="current-example-translation">
+                                        <p><strong>Beispiel:</strong> Dieses Restaurant bietet das typische italienische Esserlebnis.</p>
+                                    </div>
+                                    <p class="text-muted mt-3">Klicken um zurückzukehren</p>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="card-actions mb-4">
+                            <button class="btn btn-danger btn-card-action" id="btn-dont-know" title="Nicht gewusst">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button class="btn btn-success btn-card-action" id="btn-know" title="Gewusst">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="card-navigation">
+                            <button class="btn btn-outline-secondary" id="prev-card">
+                                <i class="fas fa-chevron-left me-1"></i> Vorherige
+                            </button>
+                            <div id="card-counter">Karte <span id="current-card-num">1</span> von <span id="total-cards">42</span></div>
+                            <button class="btn btn-outline-primary" id="next-card">
+                                Nächste <i class="fas fa-chevron-right ms-1"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -353,19 +436,25 @@
                     
                     <div class="card mb-4">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Business English</h5>
+                            <h5 class="mb-0">
+                                <select class="form-select form-select-sm d-inline-block" id="vocabDeckSelect" style="width: auto;">
+                                    <option value="business" selected>Business English</option>
+                                    <option value="travel">Reisen & Urlaub</option>
+                                    <option value="academic">Akademisches Englisch</option>
+                                </select>
+                            </h5>
                             <div>
-                                <button class="btn btn-sm btn-outline-secondary me-2">
+                                <button class="btn btn-sm btn-outline-secondary me-2" id="export-vocab">
                                     <i class="fas fa-file-export me-1"></i> Exportieren
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary">
+                                <button class="btn btn-sm btn-outline-primary" id="import-vocab">
                                     <i class="fas fa-file-import me-1"></i> Importieren
                                 </button>
                             </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-hover">
+                                <table class="table table-hover" id="vocab-table">
                                     <thead>
                                         <tr>
                                             <th>Englisch</th>
@@ -376,56 +465,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>quintessential</td>
-                                            <td>wesentlich, typisch</td>
-                                            <td>[kwin-tuh-sen-shuhl]</td>
-                                            <td><span class="badge bg-warning">Neu</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>resilient</td>
-                                            <td>belastbar, widerstandsfähig</td>
-                                            <td>[ri-zil-yuhnt]</td>
-                                            <td><span class="badge bg-success">Gemeistert</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>implement</td>
-                                            <td>umsetzen, implementieren</td>
-                                            <td>[im-pluh-ment]</td>
-                                            <td><span class="badge bg-danger">Schwierig</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>acquisition</td>
-                                            <td>Erwerb, Übernahme</td>
-                                            <td>[ak-wuh-zish-uhn]</td>
-                                            <td><span class="badge bg-info">In Bearbeitung</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>facilitate</td>
-                                            <td>erleichtern, ermöglichen</td>
-                                            <td>[fuh-sil-i-teyt]</td>
-                                            <td><span class="badge bg-success">Gemeistert</span></td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
-                                                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
+                                        <!-- Vokabeln werden hier dynamisch eingefügt -->
                                     </tbody>
                                 </table>
                             </div>
@@ -512,7 +552,7 @@
                                 </div>
                                 
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <button type="button" class="btn btn-outline-secondary me-md-2">Abbrechen</button>
+                                    <button type="button" class="btn btn-outline-secondary me-md-2" id="cancel-add">Abbrechen</button>
                                     <button type="submit" class="btn btn-primary">Speichern</button>
                                 </div>
                             </form>
@@ -534,108 +574,469 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="flashcard-container">
-                <div class="flashcard" id="flashcard">
-                    <div class="flashcard-inner flashcard-front">
-                        <div class="word">quintessential</div>
-                        <div class="hint">[kwin-tuh-sen-shuhl]</div>
-                        <div class="examples">
-                            <p><strong>Example:</strong> This restaurant offers the quintessential Italian dining experience.</p>
-                        </div>
-                        <p class="text-muted mt-3">Klicken um zu übersetzen</p>
-                    </div>
-                    <div class="flashcard-inner flashcard-back">
-                        <div class="translation">wesentlich, typisch</div>
-                        <div class="examples">
-                            <p><strong>Beispiel:</strong> Dieses Restaurant bietet das typische italienische Esserlebnis.</p>
-                        </div>
-                        <p class="text-muted mt-3">Klicken um zurückzukehren</p>
-                    </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Edit Vocabulary Modal -->
+    <div class="modal fade" id="editVocabModal" tabindex="-1" aria-labelledby="editVocabModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editVocabModalLabel">Vokabel bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            
-            <div class="card-actions mb-4">
-                <button class="btn btn-danger btn-card-action" title="Nicht gewusst">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button class="btn btn-success btn-card-action" title="Gewusst">
-                    <i class="fas fa-check"></i>
-                </button>
-            </div>
-            
-            <div class="card-navigation">
-                <button class="btn btn-outline-secondary">
-                    <i class="fas fa-chevron-left me-1"></i> Vorherige
-                </button>
-                <div>Karte 1 von 42</div>
-                <button class="btn btn-outline-primary">
-                    Nächste <i class="fas fa-chevron-right ms-1"></i>
-                </button>
+                <div class="modal-body">
+                    <form id="editVocabForm">
+                        <input type="hidden" id="edit-vocab-id">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-english-word" class="form-label">Englisches Wort/Phrase</label>
+                                <input type="text" class="form-control" id="edit-english-word" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-german-word" class="form-label">Deutsche Übersetzung</label>
+                                <input type="text" class="form-control" id="edit-german-word" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-pronunciation" class="form-label">Aussprache</label>
+                                <input type="text" class="form-control" id="edit-pronunciation">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-status" class="form-label">Status</label>
+                                <select class="form-select" id="edit-status">
+                                    <option value="new">Neu</option>
+                                    <option value="learning">In Bearbeitung</option>
+                                    <option value="difficult">Schwierig</option>
+                                    <option value="mastered">Gemeistert</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-english-example" class="form-label">Englisches Beispiel</label>
+                            <textarea class="form-control" id="edit-english-example" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-german-example" class="form-label">Deutsches Beispiel</label>
+                            <textarea class="form-control" id="edit-german-example" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-vocab">Speichern</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Sidebar Toggle
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('content').classList.toggle('active');
-        });
-        
-        // Flashcard flip functionality
-        document.getElementById('flashcard').addEventListener('click', function() {
-            this.classList.toggle('flipped');
-        });
-        
-        // Neues Deck-Formular anzeigen/ausblenden
-        document.getElementById('selectDeck').addEventListener('change', function() {
-            const newDeckContainer = document.getElementById('newDeckContainer');
-            if (this.value === 'new') {
-                newDeckContainer.style.display = 'block';
-                document.getElementById('newDeckName').setAttribute('required', 'required');
-            } else {
-                newDeckContainer.style.display = 'none';
-                document.getElementById('newDeckName').removeAttribute('required');
-            }
-        });
-        
-        // Vokabel-Formular absenden
-        document.getElementById('addVocabForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Hier würde normalerweise der AJAX-Code stehen, um die Vokabel zu speichern
-            // Simuliere erfolgreiche Speicherung
-            const englishWord = document.getElementById('englishWord').value;
-            const germanWord = document.getElementById('germanWord').value;
-            
-            // Erfolgsbenachrichtigung zeigen
-            const alertHTML = `
-                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-                    <strong>Erfolg!</strong> Die Vokabel "${englishWord} - ${germanWord}" wurde erfolgreich hinzugefügt.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">Vokabel löschen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            `;
-            
-            this.insertAdjacentHTML('beforebegin', alertHTML);
-            
-            // Formular zurücksetzen wenn nicht "weitere hinzufügen" ausgewählt ist
-            if (!document.getElementById('addAnother').checked) {
-                this.reset();
-                document.getElementById('newDeckContainer').style.display = 'none';
-            } else {
-                // Nur die Wortfelder zurücksetzen, Deck und andere Einstellungen behalten
-                document.getElementById('englishWord').value = '';
-                document.getElementById('germanWord').value = '';
-                document.getElementById('englishExample').value = '';
-                document.getElementById('germanExample').value = '';
+                <div class="modal-body">
+                    Möchten Sie die Vokabel "<span id="delete-vocab-name"></span>" wirklich löschen?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete">Löschen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Filter</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="filter-form">
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="new" id="filter-new" checked>
+                                <label class="form-check-label" for="filter-new">
+                                    Neu
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="learning" id="filter-learning" checked>
+                                <label class="form-check-label" for="filter-learning">
+                                    In Bearbeitung
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="difficult" id="filter-difficult" checked>
+                                <label class="form-check-label" for="filter-difficult">
+                                    Schwierig
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="mastered" id="filter-mastered">
+                                <label class="form-check-label" for="filter-mastered">
+                                    Gemeistert
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sort-order" class="form-label">Sortierung</label>
+                            <select class="form-select" id="sort-order">
+                                <option value="random">Zufällig</option>
+                                <option value="difficult">Schwierigste zuerst</option>
+                                <option value="newest">Neueste zuerst</option>
+                                <option value="oldest">Älteste zuerst</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="card-limit" class="form-label">Anzahl der Karten</label>
+                            <select class="form-select" id="card-limit">
+                                <option value="10">10 Karten</option>
+                                <option value="20" selected>20 Karten</option>
+                                <option value="50">50 Karten</option>
+                                <option value="0">Alle Karten</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="apply-filter">Filter anwenden</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">EngliFy</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Vokabel erfolgreich gespeichert!
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & jQuery & Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Sample vocabulary data for demo
+        const vocabularyData = [
+            {
+                id: 1,
+                english: "quintessential",
+                german: "wesentlich, typisch",
+                pronunciation: "[kwin-tuh-sen-shuhl]",
+                status: "learning",
+                englishExample: "This restaurant offers the quintessential Italian dining experience.",
+                germanExample: "Dieses Restaurant bietet das typische italienische Esserlebnis."
+            },
+            {
+                id: 2,
+                english: "endeavor",
+                german: "sich bemühen, Unterfangen",
+                pronunciation: "[en-dev-er]",
+                status: "difficult",
+                englishExample: "I will endeavor to complete the project by Friday.",
+                germanExample: "Ich werde mich bemühen, das Projekt bis Freitag abzuschließen."
+            },
+            {
+                id: 3,
+                english: "expedite",
+                german: "beschleunigen",
+                pronunciation: "[ek-spi-dahyt]",
+                status: "new",
+                englishExample: "We need to expedite the shipping process.",
+                germanExample: "Wir müssen den Versandprozess beschleunigen."
+            },
+            {
+                id: 4,
+                english: "mitigate",
+                german: "mildern, abschwächen",
+                pronunciation: "[mit-i-geyt]",
+                status: "mastered",
+                englishExample: "The company took steps to mitigate the environmental impact.",
+                germanExample: "Das Unternehmen ergriff Maßnahmen, um die Umweltauswirkungen abzuschwächen."
+            },
+            {
+                id: 5,
+                english: "leverage",
+                german: "Hebelwirkung, nutzen",
+                pronunciation: "[lev-er-ij, lee-ver-]",
+                status: "learning",
+                englishExample: "We need to leverage our strengths to win this contract.",
+                germanExample: "Wir müssen unsere Stärken nutzen, um diesen Vertrag zu gewinnen."
             }
+        ];
+        
+        // Current card index for demo
+        let currentCardIndex = 0;
+        
+        // Document ready
+        $(document).ready(function() {
+            // Toggle sidebar
+            $('#sidebarCollapse').on('click', function() {
+                $('#sidebar, #content').toggleClass('active');
+            });
             
-            // Fokus auf das erste Eingabefeld setzen
-            document.getElementById('englishWord').focus();
+            // Handle flashcard flip
+            $('#flashcard').on('click', function() {
+                $(this).toggleClass('flipped');
+            });
+            
+            // Start learning button click
+            $('#start-learning').on('click', function() {
+                $('#deck-selection').hide();
+                $('#flashcard-section').show();
+                loadCard(currentCardIndex);
+            });
+            
+            // Back to decks button click
+            $('#back-to-decks').on('click', function() {
+                $('#flashcard-section').hide();
+                $('#deck-selection').show();
+            });
+            
+            // Next card button
+            $('#next-card').on('click', function() {
+                if (currentCardIndex < vocabularyData.length - 1) {
+                    currentCardIndex++;
+                    loadCard(currentCardIndex);
+                }
+            });
+            
+            // Previous card button
+            $('#prev-card').on('click', function() {
+                if (currentCardIndex > 0) {
+                    currentCardIndex--;
+                    loadCard(currentCardIndex);
+                }
+            });
+            
+            // Know and don't know buttons
+            $('#btn-know, #btn-dont-know').on('click', function() {
+                // Save answer logic would go here
+                
+                // Move to next card if available
+                if (currentCardIndex < vocabularyData.length - 1) {
+                    currentCardIndex++;
+                    loadCard(currentCardIndex);
+                } else {
+                    // Show completion message or restart
+                    alert("Glückwunsch! Sie haben alle Karten in diesem Deck durchgesehen.");
+                    currentCardIndex = 0;
+                    loadCard(currentCardIndex);
+                }
+            });
+            
+            // Handle new deck selection
+            $('#selectDeck').on('change', function() {
+                if ($(this).val() === "new") {
+                    $('#newDeckContainer').show();
+                } else {
+                    $('#newDeckContainer').hide();
+                }
+            });
+            
+            // Handle add vocab form submission
+            $('#addVocabForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // Here you would save the vocabulary to your database
+                // For demo, we'll just show the success toast
+                
+                var toast = new bootstrap.Toast(document.getElementById('successToast'));
+                toast.show();
+                
+                if (!$('#addAnother').is(':checked')) {
+                    // Reset form
+                    this.reset();
+                    // Navigate back to first tab
+                    $('#learn-tab').tab('show');
+                } else {
+                    // Just reset form fields but stay on this tab
+                    this.reset();
+                    $('#selectDeck').val('business'); // Reset to default option
+                    $('#newDeckContainer').hide();
+                }
+            });
+            
+            // Cancel add button
+            $('#cancel-add').on('click', function() {
+                $('#addVocabForm').trigger('reset');
+                $('#learn-tab').tab('show');
+            });
+            
+            // Filter button click
+            $('#filter-btn').on('click', function() {
+                var filterModal = new bootstrap.Modal(document.getElementById('filterModal'));
+                filterModal.show();
+            });
+            
+            // Load vocabulary table
+            loadVocabularyTable();
+            
+            // Setup edit and delete buttons
+            setupVocabTableActions();
         });
+        
+        // Function to load card data
+        function loadCard(index) {
+            if (index >= 0 && index < vocabularyData.length) {
+                const card = vocabularyData[index];
+                
+                // Update card content
+                $('#current-word').text(card.english);
+                $('#current-hint').text(card.pronunciation);
+                $('#current-example').html(`<p><strong>Example:</strong> ${card.englishExample}</p>`);
+                $('#current-translation').text(card.german);
+                $('#current-example-translation').html(`<p><strong>Beispiel:</strong> ${card.germanExample}</p>`);
+                
+                // Reset flip state
+                $('#flashcard').removeClass('flipped');
+                
+                // Update counter
+                $('#current-card-num').text(index + 1);
+                $('#total-cards').text(vocabularyData.length);
+                
+                // Add fade-in effect
+                $('#flashcard').removeClass('fade-in');
+                setTimeout(function() {
+                    $('#flashcard').addClass('fade-in');
+                }, 10);
+                
+                // Update navigation buttons state
+                $('#prev-card').prop('disabled', index === 0);
+                $('#next-card').prop('disabled', index === vocabularyData.length - 1);
+            }
+        }
+        
+        // Function to load vocabulary table
+        function loadVocabularyTable() {
+            const $tbody = $('#vocab-table tbody');
+            $tbody.empty();
+            
+            vocabularyData.forEach(item => {
+                let statusBadge;
+                
+                switch(item.status) {
+                    case 'new':
+                        statusBadge = '<span class="badge bg-primary">Neu</span>';
+                        break;
+                    case 'learning':
+                        statusBadge = '<span class="badge bg-info">In Bearbeitung</span>';
+                        break;
+                    case 'difficult':
+                        statusBadge = '<span class="badge bg-warning">Schwierig</span>';
+                        break;
+                    case 'mastered':
+                        statusBadge = '<span class="badge bg-success">Gemeistert</span>';
+                        break;
+                    default:
+                        statusBadge = '<span class="badge bg-secondary">Unbekannt</span>';
+                }
+                
+                const row = `
+                    <tr data-id="${item.id}">
+                        <td>${item.english}</td>
+                        <td>${item.german}</td>
+                        <td>${item.pronunciation}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-vocab" title="Bearbeiten">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger ms-1 delete-vocab" title="Löschen">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                
+                $tbody.append(row);
+            });
+        }
+        
+        // Setup vocabulary table action buttons
+        function setupVocabTableActions() {
+            // Edit button click
+            $(document).on('click', '.edit-vocab', function() {
+                const id = $(this).closest('tr').data('id');
+                const vocab = vocabularyData.find(item => item.id === id);
+                
+                if (vocab) {
+                    $('#edit-vocab-id').val(vocab.id);
+                    $('#edit-english-word').val(vocab.english);
+                    $('#edit-german-word').val(vocab.german);
+                    $('#edit-pronunciation').val(vocab.pronunciation);
+                    $('#edit-status').val(vocab.status);
+                    $('#edit-english-example').val(vocab.englishExample);
+                    $('#edit-german-example').val(vocab.germanExample);
+                    
+                    const editModal = new bootstrap.Modal(document.getElementById('editVocabModal'));
+                    editModal.show();
+                }
+            });
+            
+            // Save edit button click
+            $('#save-edit-vocab').on('click', function() {
+                // Here you would save the edited vocabulary to your database
+                // For demo, we'll just close the modal
+                
+                const editModal = bootstrap.Modal.getInstance(document.getElementById('editVocabModal'));
+                editModal.hide();
+                
+                // Show success toast
+                const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                $('.toast-body').text("Vokabel erfolgreich aktualisiert!");
+                toast.show();
+            });
+            
+            // Delete button click
+            $(document).on('click', '.delete-vocab', function() {
+                const id = $(this).closest('tr').data('id');
+                const vocab = vocabularyData.find(item => item.id === id);
+                
+                if (vocab) {
+                    $('#delete-vocab-name').text(vocab.english);
+                    $('#confirm-delete').data('id', vocab.id);
+                    
+                    const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+                    deleteModal.show();
+                }
+            });
+            
+            // Confirm delete button click
+            $('#confirm-delete').on('click', function() {
+                // Here you would delete the vocabulary from your database
+                // For demo, we'll just close the modal
+                
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                deleteModal.hide();
+                
+                // Show success toast
+                const toast = new bootstrap.Toast(document.getElementById('successToast'));
+                $('.toast-body').text("Vokabel erfolgreich gelöscht!");
+                toast.show();
+            });
+        }
     </script>
 </body>
 </html>
