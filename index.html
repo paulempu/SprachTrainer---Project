@@ -383,7 +383,7 @@
             display: block;
         }
 
-        /* Simple Flashcard Styles */
+        /* Simple Flashcard Styles - Like in the image */
         .direction-selector-clean {
             display: flex;
             gap: 15px;
@@ -978,9 +978,11 @@
             <!-- Sidebar -->
             <aside class="sidebar">
                 <ul class="sidebar-menu">
-                    <li><a class="active" onclick="showPage('dashboard')">🏠 Startseite</a></li>
-                    <li><a onclick="showPage('trainer')">📚 Karteikarten</a></li>
+                    <li><a class="active" onclick="showPage('dashboard')">📊 Dashboard</a></li>
+                    <li><a onclick="showPage('trainer')">📚 Vokabeltrainer</a></li>
                     <li><a onclick="showPage('writing')">✏️ Schreibtrainer</a></li>
+                    <li><a onclick="showPage('statistics')">📊 Statistiken</a></li>
+                    <li><a onclick="showPage('settings')">⚙️ Einstellungen</a></li>
                 </ul>
             </aside>
 
@@ -990,15 +992,38 @@
                     <!-- Dashboard Page -->
                     <div id="dashboard-page" class="page-content">
                         <div class="page-header">
-                            <h1>Willkommen bei EngliFy! 📚</h1>
-                            <p>Bereit für eine neue Lernsitzung? Wähle deinen Trainer!</p>
+                            <h1>Dashboard</h1>
+                            <p>Willkommen zurück! Hier ist dein Lernfortschritt</p>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-card primary">
+                                <div class="stat-icon">📚</div>
+                                <div class="stat-number" id="total-vocab-count">0</div>
+                                <div class="stat-label">Vokabeln gesamt</div>
+                            </div>
+                            <div class="stat-card success">
+                                <div class="stat-icon">✅</div>
+                                <div class="stat-number" id="correct-answers">0</div>
+                                <div class="stat-label">Richtige Antworten</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-icon">⏱️</div>
+                                <div class="stat-number" id="study-sessions">0</div>
+                                <div class="stat-label">Lernsitzungen</div>
+                            </div>
+                            <div class="stat-card danger">
+                                <div class="stat-icon">❌</div>
+                                <div class="stat-number" id="wrong-answers-count">0</div>
+                                <div class="stat-label">Falsche Antworten</div>
+                            </div>
                         </div>
 
                         <div class="quick-actions">
                             <div class="action-card" onclick="showPage('trainer')">
                                 <div class="action-icon">🎯</div>
-                                <h3>Karteikarten-Trainer</h3>
-                                <p>Lerne mit klassischen Karteikarten zum Umdrehen</p>
+                                <h3>Jetzt lernen</h3>
+                                <p>Starte eine neue Lernsitzung mit deinen Vokabeln</p>
                             </div>
                             <div class="action-card" onclick="showPage('writing')">
                                 <div class="action-icon">✏️</div>
@@ -1021,8 +1046,8 @@
                     <!-- Trainer Page -->
                     <div id="trainer-page" class="page-content hidden">
                         <div class="page-header">
-                            <h1>Karteikarten-Trainer</h1>
-                            <p>Klassisches Lernen mit Karteikarten zum Umdrehen</p>
+                            <h1>Vokabeltrainer</h1>
+                            <p>Einfach und effektiv Vokabeln lernen</p>
                         </div>
 
                         <div class="content-card">
@@ -1231,6 +1256,32 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Statistics Page -->
+                    <div id="statistics-page" class="page-content hidden">
+                        <div class="page-header">
+                            <h1>Statistiken</h1>
+                            <p>Verfolge deinen Lernfortschritt</p>
+                        </div>
+                        
+                        <div class="content-card">
+                            <h3>Detaillierte Statistiken</h3>
+                            <p>Hier werden detaillierte Lernstatistiken für <strong id="stats-username"></strong> angezeigt.</p>
+                        </div>
+                    </div>
+
+                    <!-- Settings Page -->
+                    <div id="settings-page" class="page-content hidden">
+                        <div class="page-header">
+                            <h1>Einstellungen</h1>
+                            <p>Passe den Vokabeltrainer an deine Bedürfnisse an</p>
+                        </div>
+                        
+                        <div class="content-card">
+                            <h3>Allgemeine Einstellungen</h3>
+                            <p>Hier können verschiedene Einstellungen für <strong id="settings-username"></strong> vorgenommen werden.</p>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -1343,9 +1394,12 @@
             
             // Benutzername anzeigen
             document.getElementById('current-user-name').textContent = currentUser.name;
+            document.getElementById('stats-username').textContent = currentUser.name;
+            document.getElementById('settings-username').textContent = currentUser.name;
             
             // Daten laden
             loadUserVocabulary();
+            loadUserStats();
         }
 
         // Login/Register Functions
@@ -1458,6 +1512,9 @@
                 currentUser = null;
                 vocabulary = [];
                 wrongAnswers = [];
+                writingCorrect = 0;
+                writingWrong = 0;
+                writingTotal = 0;
                 showLogin();
                 
                 // Formulare zurücksetzen
@@ -1488,9 +1545,21 @@
                     vocabulary = response.vocabulary;
                     loadCard();
                     loadWritingCard();
+                    updateDashboardStats();
                 }
             } catch (error) {
                 console.error('Error loading vocabulary:', error);
+            }
+        }
+
+        async function loadUserStats() {
+            try {
+                const response = await makeRequest('stats.php?action=get_stats');
+                if (response.success) {
+                    updateDashboardStatsFromServer(response.stats);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
             }
         }
 
@@ -1522,6 +1591,7 @@
                         
                         loadCard();
                         loadWritingCard();
+                        updateDashboardStats();
                     } else {
                         alert('Fehler beim Speichern: ' + response.error);
                     }
@@ -1550,7 +1620,7 @@
                         } else if (vocabulary.length === 0) {
                             currentIndex = 0;
                         }
-                        
+
                         if (writingIndex >= vocabulary.length && vocabulary.length > 0) {
                             writingIndex = vocabulary.length - 1;
                         } else if (vocabulary.length === 0) {
@@ -1560,6 +1630,7 @@
                         loadVocabularyList();
                         loadCard();
                         loadWritingCard();
+                        updateDashboardStats();
                     } else {
                         alert('Fehler beim Löschen: ' + response.error);
                     }
@@ -1581,9 +1652,14 @@
                         wrongAnswers = [];
                         currentIndex = 0;
                         writingIndex = 0;
+                        writingCorrect = 0;
+                        writingWrong = 0;
+                        writingTotal = 0;
                         loadVocabularyList();
                         loadCard();
                         loadWritingCard();
+                        updateDashboardStats();
+                        updateWritingScore();
                     } else {
                         alert('Fehler beim Löschen: ' + response.error);
                     }
@@ -1605,6 +1681,10 @@
             
             document.getElementById(pageName + '-page').classList.remove('hidden');
             event.target.classList.add('active');
+            
+            if (pageName === 'dashboard') {
+                loadUserStats();
+            }
         }
 
         function showTrainerTab(tabName) {
@@ -1628,7 +1708,20 @@
             }
         }
 
-        // Flashcard Functions (Karteikarten-Trainer)
+        // Dashboard Stats
+        function updateDashboardStats() {
+            document.getElementById('total-vocab-count').textContent = vocabulary.length;
+            document.getElementById('wrong-answers-count').textContent = wrongAnswers.length;
+        }
+
+        function updateDashboardStatsFromServer(stats) {
+            document.getElementById('total-vocab-count').textContent = vocabulary.length;
+            document.getElementById('correct-answers').textContent = stats.correct_answers || 0;
+            document.getElementById('study-sessions').textContent = stats.study_sessions || 0;
+            document.getElementById('wrong-answers-count').textContent = wrongAnswers.length;
+        }
+
+        // Flashcard Functions
         function setDirection(newDirection) {
             direction = newDirection;
             
@@ -1716,6 +1809,7 @@
                     action: 'update_stats',
                     correct_answers: 1
                 });
+                loadUserStats();
             } catch (error) {
                 console.error('Error updating stats:', error);
             }
@@ -1741,6 +1835,8 @@
             } else {
                 wrongInfo.style.display = 'none';
             }
+            
+            updateDashboardStats();
         }
 
         // Writing Trainer Functions
@@ -1937,6 +2033,7 @@
                     writingTotal = 0;
                     updateWrongAnswersDisplay();
                     updateWritingScore();
+                    loadUserStats();
                     alert('Fortschritt wurde zurückgesetzt! 🔄');
                 } else {
                     alert('Fehler beim Zurücksetzen: ' + response.error);
