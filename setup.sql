@@ -1,9 +1,8 @@
--- EngliFy Database Setup Script für MySQL
--- Für SQLite wird die Datenbank automatisch über database.php erstellt
+-- EngliFy Database Setup Script für MySQL (InfinityFree optimiert)
+-- Führe dieses Script in phpMyAdmin auf InfinityFree aus
 
--- Datenbank erstellen (nur für MySQL)
-CREATE DATABASE IF NOT EXISTS englify_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE englify_db;
+-- Datenbank wird automatisch von InfinityFree bereitgestellt
+-- USE your_database_name; -- Setze hier deinen Datenbanknamen ein
 
 -- Benutzer Tabelle
 CREATE TABLE IF NOT EXISTS users (
@@ -14,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_username (username)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Vokabeln Tabelle
 CREATE TABLE IF NOT EXISTS vocabulary (
@@ -29,8 +28,9 @@ CREATE TABLE IF NOT EXISTS vocabulary (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_english (english),
-    INDEX idx_german (german)
-);
+    INDEX idx_german (german),
+    INDEX idx_vocabulary_search (english, german)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Benutzer Statistiken
 CREATE TABLE IF NOT EXISTS user_stats (
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS user_stats (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_stats (user_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Sessions Tabelle
 CREATE TABLE IF NOT EXISTS user_sessions (
@@ -54,8 +54,9 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_session_id (session_id),
-    INDEX idx_user_session (user_id)
-);
+    INDEX idx_user_session (user_id),
+    INDEX idx_sessions_cleanup (last_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Lernsitzungen Tabelle (Optional für detaillierte Statistiken)
 CREATE TABLE IF NOT EXISTS study_sessions (
@@ -65,10 +66,12 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     questions_answered INT DEFAULT 0,
     correct_answers INT DEFAULT 0,
     session_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_type VARCHAR(50) DEFAULT 'flashcard', -- 'flashcard' oder 'writing'
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_study (user_id),
-    INDEX idx_session_date (session_date)
-);
+    INDEX idx_session_date (session_date),
+    INDEX idx_session_type (session_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Demo-Benutzer erstellen
 INSERT IGNORE INTO users (username, password, name, email) VALUES 
@@ -77,23 +80,79 @@ INSERT IGNORE INTO users (username, password, name, email) VALUES
 -- Demo-Vokabeln für Demo-User
 SET @demo_user_id = (SELECT id FROM users WHERE username = 'demo');
 
-INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) VALUES 
-(@demo_user_id, 'influence', 'beeinflussen', '[ˈɪnfluəns]', 'Social media can influence our opinions', 'Soziale Medien können unsere Meinungen beeinflussen'),
-(@demo_user_id, 'environment', 'Umwelt', '[ɪnˈvaɪrənmənt]', 'We must protect our environment', 'Wir müssen unsere Umwelt schützen'),
-(@demo_user_id, 'responsibility', 'Verantwortung', '[rɪˌspɒnsəˈbɪləti]', 'Taking responsibility is important', 'Verantwortung zu übernehmen ist wichtig'),
-(@demo_user_id, 'development', 'Entwicklung', '[dɪˈveləpmənt]', 'The development of technology is rapid', 'Die Entwicklung der Technologie ist rasant'),
-(@demo_user_id, 'challenge', 'Herausforderung', '[ˈtʃælɪndʒ]', 'This is a real challenge for us', 'Das ist eine echte Herausforderung für uns'),
-(@demo_user_id, 'opportunity', 'Gelegenheit', '[ˌɒpəˈtjuːnəti]', 'This is a great opportunity', 'Das ist eine großartige Gelegenheit'),
-(@demo_user_id, 'important', 'wichtig', '[ɪmˈpɔːtənt]', 'Education is very important', 'Bildung ist sehr wichtig'),
-(@demo_user_id, 'necessary', 'notwendig', '[ˈnesəsəri]', 'It is necessary to study', 'Es ist notwendig zu lernen');
+-- Nur Demo-Vokabeln einfügen wenn Demo-User existiert
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'influence', 'beeinflussen', '[ˈɪnfluəns]', 'Social media can influence our opinions', 'Soziale Medien können unsere Meinungen beeinflussen'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'environment', 'Umwelt', '[ɪnˈvaɪrənmənt]', 'We must protect our environment', 'Wir müssen unsere Umwelt schützen'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'responsibility', 'Verantwortung', '[rɪˌspɒnsəˈbɪləti]', 'Taking responsibility is important', 'Verantwortung zu übernehmen ist wichtig'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'development', 'Entwicklung', '[dɪˈveləpmənt]', 'The development of technology is rapid', 'Die Entwicklung der Technologie ist rasant'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'challenge', 'Herausforderung', '[ˈtʃælɪndʒ]', 'This is a real challenge for us', 'Das ist eine echte Herausforderung für uns'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'opportunity', 'Gelegenheit', '[ˌɒpəˈtjuːnəti]', 'This is a great opportunity', 'Das ist eine großartige Gelegenheit'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'important', 'wichtig', '[ɪmˈpɔːtənt]', 'Education is very important', 'Bildung ist sehr wichtig'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'necessary', 'notwendig', '[ˈnesəsəri]', 'It is necessary to study', 'Es ist notwendig zu lernen'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'knowledge', 'Wissen', '[ˈnɒlɪdʒ]', 'Knowledge is power', 'Wissen ist Macht'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'experience', 'Erfahrung', '[ɪkˈspɪərɪəns]', 'Experience is the best teacher', 'Erfahrung ist der beste Lehrer'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'solution', 'Lösung', '[səˈluːʃən]', 'We need to find a solution', 'Wir müssen eine Lösung finden'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'success', 'Erfolg', '[səkˈses]', 'Success requires hard work', 'Erfolg erfordert harte Arbeit'
+WHERE @demo_user_id IS NOT NULL;
 
 -- Demo-Statistiken
-INSERT IGNORE INTO user_stats (user_id, correct_answers, wrong_answers, study_sessions) VALUES 
-(@demo_user_id, 15, 3, 2);
+INSERT IGNORE INTO user_stats (user_id, correct_answers, wrong_answers, study_sessions) 
+SELECT @demo_user_id, 25, 5, 3
+WHERE @demo_user_id IS NOT NULL;
 
--- Cleanup alte Sessions (kann als Cron-Job ausgeführt werden)
+-- Cleanup Event für alte Sessions (wird automatisch ausgeführt)
+-- InfinityFree unterstützt möglicherweise keine Events, daher als Kommentar
+/*
+CREATE EVENT IF NOT EXISTS cleanup_old_sessions
+ON SCHEDULE EVERY 1 DAY
+DO
+  DELETE FROM user_sessions WHERE last_active < DATE_SUB(NOW(), INTERVAL 7 DAY);
+*/
+
+-- Alternative: Führe diesen Query regelmäßig manuell aus oder in einem Cron-Job
 -- DELETE FROM user_sessions WHERE last_active < DATE_SUB(NOW(), INTERVAL 7 DAY);
 
--- Indexes für bessere Performance
-CREATE INDEX IF NOT EXISTS idx_vocabulary_search ON vocabulary(english, german);
-CREATE INDEX IF NOT EXISTS idx_sessions_cleanup ON user_sessions(last_active);
+-- Zusätzliche Indexes für bessere Performance
+CREATE INDEX IF NOT EXISTS idx_vocab_created ON vocabulary(created_at);
+CREATE INDEX IF NOT EXISTS idx_stats_last_study ON user_stats(last_study_date);
+
+-- Erfolgreiche Installation bestätigen
+SELECT 
+    'EngliFy Datenbank erfolgreich installiert!' as Status,
+    COUNT(*) as 'Anzahl Demo-Vokabeln'
+FROM vocabulary 
+WHERE user_id = @demo_user_id;
