@@ -1,8 +1,6 @@
--- EngliFy Database Setup Script für MySQL (InfinityFree optimiert)
+-- EngliFy Database Setup Script für InfinityFree MySQL
 -- Führe dieses Script in phpMyAdmin auf InfinityFree aus
-
--- Datenbank wird automatisch von InfinityFree bereitgestellt
--- USE your_database_name; -- Setze hier deinen Datenbanknamen ein
+-- Datenbank: if0_38963104_sprachtrainer
 
 -- Benutzer Tabelle
 CREATE TABLE IF NOT EXISTS users (
@@ -80,7 +78,7 @@ INSERT IGNORE INTO users (username, password, name, email) VALUES
 -- Demo-Vokabeln für Demo-User
 SET @demo_user_id = (SELECT id FROM users WHERE username = 'demo');
 
--- Nur Demo-Vokabeln einfügen wenn Demo-User existiert
+-- Demo-Vokabeln einfügen
 INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
 SELECT @demo_user_id, 'influence', 'beeinflussen', '[ˈɪnfluəns]', 'Social media can influence our opinions', 'Soziale Medien können unsere Meinungen beeinflussen'
 WHERE @demo_user_id IS NOT NULL;
@@ -129,22 +127,22 @@ INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_
 SELECT @demo_user_id, 'success', 'Erfolg', '[səkˈses]', 'Success requires hard work', 'Erfolg erfordert harte Arbeit'
 WHERE @demo_user_id IS NOT NULL;
 
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'language', 'Sprache', '[ˈlæŋɡwɪdʒ]', 'Learning a new language is exciting', 'Eine neue Sprache zu lernen ist aufregend'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'practice', 'üben', '[ˈpræktɪs]', 'Practice makes perfect', 'Übung macht den Meister'
+WHERE @demo_user_id IS NOT NULL;
+
+INSERT IGNORE INTO vocabulary (user_id, english, german, pronunciation, english_example, german_example) 
+SELECT @demo_user_id, 'understand', 'verstehen', '[ˌʌndərˈstænd]', 'I understand the problem', 'Ich verstehe das Problem'
+WHERE @demo_user_id IS NOT NULL;
+
 -- Demo-Statistiken
 INSERT IGNORE INTO user_stats (user_id, correct_answers, wrong_answers, study_sessions) 
 SELECT @demo_user_id, 25, 5, 3
 WHERE @demo_user_id IS NOT NULL;
-
--- Cleanup Event für alte Sessions (wird automatisch ausgeführt)
--- InfinityFree unterstützt möglicherweise keine Events, daher als Kommentar
-/*
-CREATE EVENT IF NOT EXISTS cleanup_old_sessions
-ON SCHEDULE EVERY 1 DAY
-DO
-  DELETE FROM user_sessions WHERE last_active < DATE_SUB(NOW(), INTERVAL 7 DAY);
-*/
-
--- Alternative: Führe diesen Query regelmäßig manuell aus oder in einem Cron-Job
--- DELETE FROM user_sessions WHERE last_active < DATE_SUB(NOW(), INTERVAL 7 DAY);
 
 -- Zusätzliche Indexes für bessere Performance
 CREATE INDEX IF NOT EXISTS idx_vocab_created ON vocabulary(created_at);
@@ -152,7 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_stats_last_study ON user_stats(last_study_date);
 
 -- Erfolgreiche Installation bestätigen
 SELECT 
-    'EngliFy Datenbank erfolgreich installiert!' as Status,
+    'EngliFy Datenbank erfolgreich auf InfinityFree installiert!' as Status,
     COUNT(*) as 'Anzahl Demo-Vokabeln'
 FROM vocabulary 
 WHERE user_id = @demo_user_id;

@@ -2,9 +2,10 @@
 /**
  * EngliFy Authentication API
  * Handles Login, Registration, and Session Management
+ * Optimiert für InfinityFree MySQL
  * 
  * @author EngliFy Team
- * @version 1.0
+ * @version 2.0
  */
 
 // CORS Headers für Frontend-Zugriff
@@ -17,6 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
+// Error Reporting für Debugging (nur für Development)
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+
 require_once 'database.php';
 
 // Session starten
@@ -24,7 +29,6 @@ session_start();
 
 try {
     $db = Database::getInstance();
-    $pdo = $db->getConnection();
     
     // GET Requests
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -43,6 +47,11 @@ try {
     // POST Requests
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
+        
+        if ($input === null) {
+            sendError('Invalid JSON input');
+        }
+        
         $action = $input['action'] ?? '';
         
         switch ($action) {
@@ -78,22 +87,27 @@ function handleCheckSession($db) {
         sendError('No session');
     }
     
-    $user = $db->getSessionUser($sessionId);
-    
-    if ($user) {
-        // Session-Aktivität aktualisieren
-        $db->updateSessionActivity($sessionId);
+    try {
+        $user = $db->getSessionUser($sessionId);
         
-        sendSuccess([
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'name' => $user['name'],
-                'email' => $user['email']
-            ]
-        ]);
-    } else {
-        sendError('Invalid session');
+        if ($user) {
+            // Session-Aktivität aktualisieren
+            $db->updateSessionActivity($sessionId);
+            
+            sendSuccess([
+                'user' => [
+                    'id' => (int)$user['id'],
+                    'username' => $user['username'],
+                    'name' => $user['name'],
+                    'email' => $user['email']
+                ]
+            ]);
+        } else {
+            sendError('Invalid session');
+        }
+    } catch (Exception $e) {
+        error_log("Check session error: " . $e->getMessage());
+        sendError('Session check failed');
     }
 }
 
@@ -109,38 +123,47 @@ function handleLogin($db, $input) {
         sendError('Benutzername und Passwort sind erforderlich');
     }
     
-    // Benutzer suchen
-    $user = $db->getUserByUsername($username);
-    
-    if (!$user) {
-        sendError('Ungültige Anmeldedaten');
+    if (strlen($username) > 50) {
+        sendError('Benutzername zu lang');
     }
     
-    // Passwort überprüfen
-    if (!password_verify($password, $user['password'])) {
-        sendError('Ungültige Anmeldedaten');
-    }
-    
-    // Session erstellen
-    $sessionId = session_id();
-    if (empty($sessionId)) {
-        session_start();
-        $sessionId = session_id();
-    }
-    
-    if ($db->createSession($sessionId, $user['id'])) {
-        error_log("✅ Benutzer {$username} erfolgreich angemeldet");
+    try {
+        // Benutzer suchen
+        $user = $db->getUserByUsername($username);
         
-        sendSuccess([
-            'user' => [
-                'id' => $user['id'],
-                'username' => $user['username'],
-                'name' => $user['name'],
-                'email' => $user['email']
-            ]
-        ]);
-    } else {
-        sendError('Session konnte nicht erstellt werden');
+        if (!$user) {
+            sendError('Ungültige Anmeldedaten');
+        }
+        
+        // Passwort überprüfen
+        if (!password_verify($password, $user['password'])) {
+            sendError('Ungültige Anmeldedaten');
+        }
+        
+        // Session erstellen
+        $sessionId = session_id();
+        if (empty($sessionId)) {
+            session_start();
+            $sessionId = session_id();
+        }
+        
+        if ($db->createSession($sessionId, $user['id'])) {
+            error_log("✅ Benutzer {$username} erfolgreich angemeldet (InfinityFree)");
+            
+            sendSuccess([
+                'user' => [
+                    'id' => (int)$user['id'],
+                    'username' => $user['username'],
+                    'name' => $user['name'],
+                    'email' => $user['email']
+                ]
+            ]);
+        } else {
+            sendError('Session konnte nicht erstellt werden');
+        }
+    } catch (Exception $e) {
+        error_log("Login error: " . $e->getMessage());
+        sendError('Login fehlgeschlagen');
     }
 }
 
@@ -163,6 +186,10 @@ function handleRegister($db, $input) {
         sendError('Benutzername muss mindestens 3 Zeichen lang sein');
     }
     
+    if (strlen($username) > 50) {
+        sendError('Benutzername zu lang (max. 50 Zeichen)');
+    }
+    
     if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
         sendError('Benutzername darf nur Buchstaben, Zahlen und _ enthalten');
     }
@@ -172,20 +199,33 @@ function handleRegister($db, $input) {
         sendError('Passwort muss mindestens 6 Zeichen lang sein');
     }
     
+    if (strlen($password) > 128) {
+        sendError('Passwort zu lang');
+    }
+    
+    // Name validieren
+    if (strlen($name) > 100) {
+        sendError('Name zu lang (max. 100 Zeichen)');
+    }
+    
     // E-Mail validieren
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         sendError('Ungültige E-Mail-Adresse');
     }
     
-    // Prüfen ob Benutzername bereits existiert
-    if ($db->getUserByUsername($username)) {
-        sendError('Benutzername bereits vergeben');
+    if (strlen($email) > 100) {
+        sendError('E-Mail zu lang (max. 100 Zeichen)');
     }
     
     try {
+        // Prüfen ob Benutzername bereits existiert
+        if ($db->getUserByUsername($username)) {
+            sendError('Benutzername bereits vergeben');
+        }
+        
         // Benutzer erstellen
         if ($db->createUser($username, $password, $name, $email)) {
-            error_log("✅ Neuer Benutzer {$username} registriert");
+            error_log("✅ Neuer Benutzer {$username} registriert (InfinityFree)");
             
             sendSuccess([
                 'message' => 'Registrierung erfolgreich'
@@ -196,7 +236,7 @@ function handleRegister($db, $input) {
     } catch (Exception $e) {
         error_log("Registrierung Error: " . $e->getMessage());
         
-        if (strpos($e->getMessage(), 'UNIQUE constraint failed') !== false) {
+        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
             sendError('Benutzername bereits vergeben');
         } else {
             sendError('Registrierung fehlgeschlagen');
@@ -211,13 +251,17 @@ function handleLogout($db) {
     $sessionId = session_id();
     
     if (!empty($sessionId)) {
-        $db->deleteSession($sessionId);
+        try {
+            $db->deleteSession($sessionId);
+        } catch (Exception $e) {
+            error_log("Logout error: " . $e->getMessage());
+        }
         
         // PHP Session zerstören
         session_unset();
         session_destroy();
         
-        error_log("👋 Benutzer erfolgreich abgemeldet");
+        error_log("👋 Benutzer erfolgreich abgemeldet (InfinityFree)");
     }
     
     sendSuccess(['message' => 'Erfolgreich abgemeldet']);
