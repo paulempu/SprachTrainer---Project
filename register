@@ -50,6 +50,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     [$username, $email, $password_hash]
                 );
                 
+                // Benutzer-ID des neuen Benutzers holen
+                $pdo = getDBConnection();
+                $new_user_id = $pdo->lastInsertId();
+                
+                // Standard-Vokabeln für neuen Benutzer hinzufügen
+                $default_vocabularies = [
+                    ['Hallo', 'Hello'], ['Hund', 'Dog'], ['Katze', 'Cat'], ['Haus', 'House'], 
+                    ['Auto', 'Car'], ['Buch', 'Book'], ['Wasser', 'Water'], ['Essen', 'Food'],
+                    ['Freund', 'Friend'], ['Schule', 'School'], ['Familie', 'Family'], ['Zeit', 'Time'],
+                    ['Geld', 'Money'], ['Arbeit', 'Work'], ['Liebe', 'Love'], ['Leben', 'Life'],
+                    ['Tag', 'Day'], ['Nacht', 'Night'], ['Jahr', 'Year'], ['Welt', 'World']
+                ];
+                
+                foreach ($default_vocabularies as $vocab) {
+                    executeQuery(
+                        "INSERT INTO vocabularies (user_id, german, english) VALUES (?, ?, ?)",
+                        [$new_user_id, $vocab[0], $vocab[1]]
+                    );
+                }
+                
                 $success = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
             }
         } catch (Exception $e) {
