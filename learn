@@ -1,0 +1,395 @@
+<?php
+/**
+ * Englify - Lern-Interface mit Flashcards
+ * Hauptlernfunktion mit Spaced Repetition System
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Login erforderlich
+requireLogin();
+
+$user_id = getCurrentUserId();
+$error = '';
+$success = '';
+
+// Antwort verarbeiten
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['vocabulary_id'])) {
+    $vocab_id = (int)$_POST['vocabulary_id'];
+    $answer = $_POST['answer']; // 'correct' oder 'incorrect'
+    
+    try {
+        // Aktuellen Fortschritt laden oder erstellen
+        $stmt = executeQuery(
+            "SELECT * FROM progress WHERE user_id = ? AND vocabulary_id = ?",
+            [$user_id, $vocab_id]
+        );
+        $progress = $stmt->fetch();
+        
+        if (!$progress) {
+            // Neuen Fortschritt erstellen
+            executeQuery(
+                "INSERT INTO progress (user_id, vocabulary_id, correct_count) VALUES (?, ?, ?)",
+                [$user_id, $vocab_id, $answer === 'correct' ? 1 : 0]
+            );
+        } else {
+            // Fortschritt aktualisieren
+            if ($answer === 'correct') {
+                $new_correct_count = $progress['correct_count'] + 1;
+                $is_learned = $new_correct_count >= 3 ? 1 : 0;
+                
+                executeQuery(
+                    "UPDATE progress SET correct_count = ?, is_learned = ?, last_seen = NOW() 
+                     WHERE user_id = ? AND vocabulary_id = ?",
+                    [$new_correct_count, $is_learned, $user_id, $vocab_id]
+                );
+                
+                if ($is_learned) {
+                    $success = "Großartig! Du hast diese Vokabel gelernt! 🎉";
+                }
+            } else {
+                // Bei falscher Antwort: Zähler zurücksetzen
+                executeQuery(
+                    "UPDATE progress SET correct_count = 0, is_learned = 0, last_seen = NOW() 
+                     WHERE user_id = ? AND vocabulary_id = ?",
+                    [$user_id, $vocab_id]
+                );
+            }
+        }
+    } catch (Exception $e) {
+        $error = "Fehler beim Speichern des Fortschritts: " . $e->getMessage();
+    }
+}
+
+// Nächste Vokabel auswählen
+try {
+    // Spaced Repetition: Priorität für Vokabeln die:
+    // 1. Noch nie gesehen wurden
+    // 2. Länger nicht gesehen wurden
+    // 3. Noch nicht gelernt sind
+    $stmt = executeQuery("
+        SELECT v.id, v.german, v.english,
+               COALESCE(p.correct_count, 0) as correct_count,
+               COALESCE(p.is_learned, 0) as is_learned,
+               COALESCE(p.last_seen, '1970-01-01') as last_seen
+        FROM vocabularies v
+        LEFT JOIN progress p ON v.id = p.vocabulary_id AND p.user_id = v.user_id
+        WHERE v.user_id = ? AND (p.is_learned = 0 OR p.is_learned IS NULL)
+        ORDER BY 
+            CASE WHEN p.last_seen IS NULL THEN 0 ELSE 1 END,  -- Neue zuerst
+            p.last_seen ASC,                                   -- Älteste zuerst
+            RAND()                                             -- Zufällig bei gleicher Zeit
+        LIMIT 1
+    ", [$user_id]);
+    
+    $current_vocabulary = $stmt->fetch();
+    
+    if (!$current_vocabulary) {
+        // Alle Vokabeln gelernt - nochmal alle durchgehen
+        $stmt = executeQuery("
+            SELECT v.id, v.german, v.english,
+                   p.correct_count, p.is_learned, p.last_seen
+            FROM vocabularies v
+            LEFT JOIN progress p ON v.id = p.vocabulary_id AND p.user_id = v.user_id
+            WHERE v.user_id = ?
+            ORDER BY p.last_seen ASC, RAND()
+            LIMIT 1
+        ", [$user_id]);
+        
+        $current_vocabulary = $stmt->fetch();
+    }
+    
+} catch (Exception $e) {
+    $error = "Fehler beim Laden der Vokabel: " . $e->getMessage();
+    $current_vocabulary = null;
+}
+
+// Lernrichtung bestimmen (Deutsch->Englisch oder Englisch->Deutsch)
+$direction = $_GET['direction'] ?? 'de_to_en';
+$show_answer = isset($_GET['show_answer']) && $_GET['show_answer'] === '1';
+
+// Statistiken für Fortschrittsanzeige
+try {
+    $stmt = executeQuery("SELECT COUNT(*) as total FROM vocabularies WHERE user_id = ?", [$user_id]);
+    $total_vocab = $stmt->fetch()['total'];
+    
+    $stmt = executeQuery("SELECT COUNT(*) as learned FROM progress WHERE user_id = ? AND is_learned = 1", [$user_id]);
+    $learned_vocab = $stmt->fetch()['learned'];
+    
+    $progress_percent = $total_vocab > 0 ? ($learned_vocab / $total_vocab) * 100 : 0;
+} catch (Exception $e) {
+    $total_vocab = 0;
+    $learned_vocab = 0;
+    $progress_percent = 0;
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lernen - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="dashboard.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="dashboard.php">Dashboard</a></li>
+                    <li><a href="learn.php">Lernen</a></li>
+                    <li><a href="add_vocabulary.php">Vokabel hinzufügen</a></li>
+                    <li><a href="manage_vocabulary.php">Vokabeln verwalten</a></li>
+                    <li><a href="progress.php">Fortschritt</a></li>
+                    <li><a href="logout.php">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Fortschrittsanzeige -->
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 1rem;">
+                <h2>Lernfortschritt</h2>
+                <span id="progress-text"><?= $learned_vocab ?> / <?= $total_vocab ?> Vokabeln gelernt</span>
+            </div>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar" style="width: <?= number_format($progress_percent, 1) ?>%">
+                    <?= number_format($progress_percent, 1) ?>%
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="alert alert-success" style="display: none;"></div>
+
+        <!-- Lernbereich -->
+        <?php if ($current_vocabulary): ?>
+            
+            <!-- Einstellungen -->
+            <div class="card">
+                <div class="d-flex justify-content-between align-items-center" style="flex-wrap: wrap; gap: 1rem;">
+                    <h3>Lernmodus</h3>
+                    <div class="d-flex" style="gap: 0.5rem; flex-wrap: wrap;">
+                        <button onclick="changeDirection('de_to_en')" id="btn-de-en" class="btn <?= $direction === 'de_to_en' ? 'btn-primary' : 'btn-secondary' ?>">
+                            🇩🇪 → 🇬🇧 Deutsch zu Englisch
+                        </button>
+                        <button onclick="changeDirection('en_to_de')" id="btn-en-de" class="btn <?= $direction === 'en_to_de' ? 'btn-primary' : 'btn-secondary' ?>">
+                            🇬🇧 → 🇩🇪 Englisch zu Deutsch
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flashcard -->
+            <div id="flashcard-container" class="flashcard">
+                <!-- Wird von JavaScript gefüllt -->
+            </div>
+
+        <?php else: ?>
+            <!-- Alle Vokabeln gelernt - (gleich wie vorher) -->
+            <div class="card text-center">
+                <?php if ($total_vocab === 0): ?>
+                    <h2>Noch keine Vokabeln vorhanden</h2>
+                    <p style="color: #666; margin: 2rem 0;">
+                        Du hast noch keine Vokabeln hinzugefügt. Füge deine ersten Vokabeln hinzu, um zu beginnen!
+                    </p>
+                    <a href="add_vocabulary.php" class="btn btn-primary">
+                        ➕ Erste Vokabel hinzufügen
+                    </a>
+                <?php else: ?>
+                    <!-- Alle Vokabeln erfolgreich gelernt -->
+                    <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 3rem; border-radius: 20px; margin: 2rem 0;">
+                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">🎉 GLÜCKWUNSCH! 🎉</h1>
+                        <h2 style="margin-bottom: 2rem;">Alle Vokabeln erfolgreich gelernt!</h2>
+                        <p style="font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9;">
+                            Du hast alle <?= $total_vocab ?> Vokabeln gemeistert!<br>
+                            Das ist eine fantastische Leistung! 🌟
+                        </p>
+                        
+                        <!-- Erfolgs-Statistiken -->
+                        <div class="stats-grid" style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">✅</div>
+                                <div class="stat-label" style="color: white;"><strong><?= $learned_vocab ?> Vokabeln</strong><br>erfolgreich gelernt</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">💯</div>
+                                <div class="stat-label" style="color: white;"><strong>100% Fortschritt</strong><br>erreicht</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">🏆</div>
+                                <div class="stat-label" style="color: white;"><strong>Ziel erreicht!</strong><br>Alle Vokabeln gemeistert</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center" style="margin-top: 3rem;">
+                        <a href="dashboard.php" class="btn btn-secondary" style="font-size: 1.1rem;">
+                            🏠 Zurück zum Dashboard
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Tipps -->
+        <div class="card">
+            <h3>💡 Lerntipps</h3>
+            <ul style="color: #666; line-height: 1.8;">
+                <li><strong>Ehrlich sein:</strong> Wähle "Kann ich nicht", wenn du unsicher bist</li>
+                <li><strong>Regelmäßig lernen:</strong> Kurze, tägliche Sessions sind effektiver</li>
+                <li><strong>Beide Richtungen:</strong> Lerne sowohl Deutsch→Englisch als auch Englisch→Deutsch</li>
+                <li><strong>Geduld haben:</strong> Jede Vokabel muss 3x richtig beantwortet werden</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+    let currentVocabulary = <?= json_encode($current_vocabulary) ?>;
+    let currentDirection = '<?= $direction ?>';
+    let showAnswer = false;
+
+    function renderFlashcard() {
+        if (!currentVocabulary) return;
+        
+        const container = document.getElementById('flashcard-container');
+        const isGermanToEnglish = currentDirection === 'de_to_en';
+        
+        container.innerHTML = `
+            ${isGermanToEnglish ? '<div style="color: #666; margin-bottom: 1rem;">🇩🇪 Deutsch</div>' : '<div style="color: #666; margin-bottom: 1rem;">🇬🇧 Englisch</div>'}
+            <div class="flashcard-word">${isGermanToEnglish ? currentVocabulary.german : currentVocabulary.english}</div>
+            
+            <div id="answer-section" style="display: ${showAnswer ? 'block' : 'none'};">
+                ${isGermanToEnglish ? '<div style="color: #666; margin: 2rem 0 1rem;">🇬🇧 Englisch</div>' : '<div style="color: #666; margin: 2rem 0 1rem;">🇩🇪 Deutsch</div>'}
+                <div style="font-size: 2rem; color: #28a745; font-weight: bold;">
+                    ${isGermanToEnglish ? currentVocabulary.english : currentVocabulary.german}
+                </div>
+            </div>
+            
+            <div id="question-text" style="color: #666; margin-top: 2rem; display: ${showAnswer ? 'none' : 'block'};">
+                ${isGermanToEnglish ? 'Wie heißt das auf Englisch?' : 'Wie heißt das auf Deutsch?'}
+            </div>
+
+            <div style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
+                Richtig beantwortet: ${currentVocabulary.correct_count}/3
+                ${currentVocabulary.correct_count > 0 ? `
+                    <div class="progress-container" style="width: 150px; margin: 0.5rem auto;">
+                        <div class="progress-bar" style="width: ${Math.min(100, (currentVocabulary.correct_count / 3) * 100)}%">
+                            ${Math.min(100, Math.round((currentVocabulary.correct_count / 3) * 100))}%
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="flashcard-controls">
+                <button id="show-answer-btn" class="btn btn-secondary" onclick="showAnswerFunction()" style="display: ${showAnswer ? 'none' : 'inline-block'};">
+                    💡 Antwort anzeigen
+                </button>
+                
+                <div id="answer-buttons" style="display: ${showAnswer ? 'flex' : 'none'}; gap: 1rem;">
+                    <button onclick="submitAnswer('incorrect')" class="btn btn-danger">
+                        ❌ Kann ich nicht
+                    </button>
+                    <button onclick="submitAnswer('correct')" class="btn btn-success">
+                        ✅ Kann ich
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function showAnswerFunction() {
+        showAnswer = true;
+        renderFlashcard();
+    }
+
+    function submitAnswer(answer) {
+        const formData = new FormData();
+        formData.append('ajax', '1');
+        formData.append('vocabulary_id', currentVocabulary.id);
+        formData.append('answer', answer);
+
+        fetch('learn.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success Message anzeigen
+                if (data.message) {
+                    const successDiv = document.getElementById('success-message');
+                    successDiv.textContent = data.message;
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 3000);
+                }
+                
+                // Fortschritt aktualisieren
+                document.getElementById('progress-text').textContent = 
+                    `${data.progress.learned} / ${data.progress.total} Vokabeln gelernt`;
+                document.getElementById('progress-bar').style.width = `${data.progress.percentage}%`;
+                document.getElementById('progress-bar').textContent = `${data.progress.percentage}%`;
+                
+                // Nächste Vokabel laden oder Erfolgsseite anzeigen
+                if (data.next_vocabulary) {
+                    currentVocabulary = data.next_vocabulary;
+                    showAnswer = false;
+                    renderFlashcard();
+                } else {
+                    // Alle Vokabeln gelernt - Seite neu laden um Erfolgsseite zu zeigen
+                    location.reload();
+                }
+            } else {
+                alert('Fehler: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Fehler beim Senden der Antwort');
+        });
+    }
+
+    function changeDirection(newDirection) {
+        currentDirection = newDirection;
+        showAnswer = false;
+        
+        // Button-Status ändern
+        document.getElementById('btn-de-en').className = 
+            newDirection === 'de_to_en' ? 'btn btn-primary' : 'btn btn-secondary';
+        document.getElementById('btn-en-de').className = 
+            newDirection === 'en_to_de' ? 'btn btn-primary' : 'btn btn-secondary';
+        
+        renderFlashcard();
+    }
+
+    // Tastatur-Shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && !showAnswer) {
+            e.preventDefault();
+            showAnswerFunction();
+        }
+        
+        if (e.key === 'j' && showAnswer) {
+            e.preventDefault();
+            submitAnswer('incorrect');
+        }
+        
+        if (e.key === 'k' && showAnswer) {
+            e.preventDefault();
+            submitAnswer('correct');
+        }
+    });
+
+    // Initial render
+    if (currentVocabulary) {
+        renderFlashcard();
+    }
+    </script>
+</body>
+</html>
