@@ -1,0 +1,15 @@
+<?php
+/**
+ * Englify - Logout
+ * Benutzer ausloggen und zur Startseite weiterleiten
+ */
+
+require_once 'includes/session.php';
+
+// Benutzer ausloggen
+logoutUser();
+
+// Zur Startseite weiterleiten
+header('Location: index.php');
+exit();
+?>

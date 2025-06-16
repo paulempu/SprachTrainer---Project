@@ -1,0 +1,222 @@
+<?php
+/**
+ * Englify - Vokabeln verwalten
+ * Übersicht aller Vokabeln mit Möglichkeit zum Löschen
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Login erforderlich
+requireLogin();
+
+$user_id = getCurrentUserId();
+$success = '';
+$error = '';
+
+// Vokabel löschen
+if (isset($_POST['delete_id'])) {
+    $vocab_id = (int)$_POST['delete_id'];
+    
+    try {
+        // Prüfen ob Vokabel dem Benutzer gehört
+        $stmt = executeQuery(
+            "SELECT id FROM vocabularies WHERE id = ? AND user_id = ?",
+            [$vocab_id, $user_id]
+        );
+        
+        if ($stmt->rowCount() > 0) {
+            // Vokabel und zugehörige Fortschritte löschen
+            executeQuery("DELETE FROM progress WHERE vocabulary_id = ? AND user_id = ?", [$vocab_id, $user_id]);
+            executeQuery("DELETE FROM vocabularies WHERE id = ? AND user_id = ?", [$vocab_id, $user_id]);
+            
+            $success = 'Vokabel erfolgreich gelöscht!';
+        } else {
+            $error = 'Vokabel nicht gefunden oder keine Berechtigung.';
+        }
+    } catch (Exception $e) {
+        $error = 'Fehler beim Löschen: ' . $e->getMessage();
+    }
+}
+
+// Filter-Parameter
+$filter = $_GET['filter'] ?? 'all';
+$search = $_GET['search'] ?? '';
+
+// Vokabeln laden
+try {
+    $sql = "SELECT v.id, v.german, v.english, v.created_at, 
+                   COALESCE(p.correct_count, 0) as correct_count,
+                   COALESCE(p.is_learned, 0) as is_learned
+            FROM vocabularies v
+            LEFT JOIN progress p ON v.id = p.vocabulary_id AND p.user_id = v.user_id
+            WHERE v.user_id = ?";
+    
+    $params = [$user_id];
+    
+    // Filter anwenden
+    if ($filter === 'learned') {
+        $sql .= " AND p.is_learned = 1";
+    } elseif ($filter === 'unlearned') {
+        $sql .= " AND (p.is_learned = 0 OR p.is_learned IS NULL)";
+    }
+    
+    // Suche anwenden
+    if (!empty($search)) {
+        $sql .= " AND (v.german LIKE ? OR v.english LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+    }
+    
+    $sql .= " ORDER BY v.created_at DESC";
+    
+    $stmt = executeQuery($sql, $params);
+    $vocabularies = $stmt->fetchAll();
+    
+} catch (Exception $e) {
+    $error = "Fehler beim Laden der Vokabeln: " . $e->getMessage();
+    $vocabularies = [];
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vokabeln verwalten - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="dashboard.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="dashboard.php">Dashboard</a></li>
+                    <li><a href="learn.php">Lernen</a></li>
+                    <li><a href="add_vocabulary.php">Vokabel hinzufügen</a></li>
+                    <li><a href="manage_vocabulary.php">Vokabeln verwalten</a></li>
+                    <li><a href="progress.php">Fortschritt</a></li>
+                    <li><a href="logout.php">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Überschrift und Aktionen -->
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center" style="flex-wrap: wrap; gap: 1rem;">
+                <h1>Vokabeln verwalten (<?= count($vocabularies) ?> Vokabeln)</h1>
+                <a href="add_vocabulary.php" class="btn btn-primary">
+                    ➕ Neue Vokabel hinzufügen
+                </a>
+            </div>
+        </div>
+
+        <?php if ($error): ?>
+            <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+        
+        <?php if ($success): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+        <?php endif; ?>
+
+        <!-- Filter und Suche -->
+        <div class="card">
+            <form method="GET" class="d-flex" style="gap: 1rem; flex-wrap: wrap; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="search">Suchen:</label>
+                    <input type="text" id="search" name="search" 
+                           value="<?= htmlspecialchars($search) ?>"
+                           placeholder="Deutsch oder Englisch...">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="filter">Filter:</label>
+                    <select id="filter" name="filter" style="padding: 0.75rem; border: 2px solid #e1e5e9; border-radius: 8px;">
+                        <option value="all" <?= $filter === 'all' ? 'selected' : '' ?>>Alle Vokabeln</option>
+                        <option value="learned" <?= $filter === 'learned' ? 'selected' : '' ?>>Nur gelernte</option>
+                        <option value="unlearned" <?= $filter === 'unlearned' ? 'selected' : '' ?>>Nur ungelernte</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-secondary">Filtern</button>
+                
+                <?php if (!empty($search) || $filter !== 'all'): ?>
+                    <a href="manage_vocabulary.php" class="btn btn-warning">Filter zurücksetzen</a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <!-- Vokabel-Tabelle -->
+        <div class="card">
+            <?php if (empty($vocabularies)): ?>
+                <div class="text-center" style="padding: 3rem;">
+                    <h3>Keine Vokabeln gefunden</h3>
+                    <p style="color: #666; margin: 1rem 0;">
+                        <?php if (!empty($search) || $filter !== 'all'): ?>
+                            Versuche einen anderen Filter oder Suchbegriff.
+                        <?php else: ?>
+                            Du hast noch keine Vokabeln hinzugefügt.
+                        <?php endif; ?>
+                    </p>
+                    <a href="add_vocabulary.php" class="btn btn-primary">
+                        Erste Vokabel hinzufügen
+                    </a>
+                </div>
+            <?php else: ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Deutsch</th>
+                            <th>Englisch</th>
+                            <th>Status</th>
+                            <th>Richtig beantwortet</th>
+                            <th>Hinzugefügt</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($vocabularies as $vocab): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($vocab['german']) ?></strong></td>
+                            <td><strong><?= htmlspecialchars($vocab['english']) ?></strong></td>
+                            <td>
+                                <?php if ($vocab['is_learned']): ?>
+                                    <span style="color: #28a745; font-weight: bold;">✅ Gelernt</span>
+                                <?php else: ?>
+                                    <span style="color: #dc3545; font-weight: bold;">📖 Lernend</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span style="color: #666;">
+                                    <?= $vocab['correct_count'] ?>/3
+                                    <?php if ($vocab['correct_count'] > 0): ?>
+                                        <div class="progress-container" style="width: 60px; height: 8px; margin-top: 4px;">
+                                            <div class="progress-bar" style="width: <?= min(100, ($vocab['correct_count'] / 3) * 100) ?>%; height: 8px; font-size: 0;"></div>
+                                        </div>
+                                    <?php endif; ?>
+                                </span>
+                            </td>
+                            <td style="color: #666; font-size: 0.9rem;">
+                                <?= date('d.m.Y', strtotime($vocab['created_at'])) ?>
+                            </td>
+                            <td>
+                                <form method="POST" style="display: inline;" 
+                                      onsubmit="return confirm('Vokabel wirklich löschen?')">
+                                    <input type="hidden" name="delete_id" value="<?= $vocab['id'] ?>">
+                                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                                        🗑️ Löschen
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+</body>
+</html>

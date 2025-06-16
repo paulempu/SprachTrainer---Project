@@ -1,0 +1,148 @@
+<?php
+/**
+ * Englify - Neue Vokabel hinzufügen
+ * Benutzer können hier neue Vokabelpaare (Deutsch/Englisch) hinzufügen
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Login erforderlich
+requireLogin();
+
+$user_id = getCurrentUserId();
+$success = '';
+$error = '';
+
+// Formular-Verarbeitung
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $german = trim($_POST['german']);
+    $english = trim($_POST['english']);
+    
+    // Eingabe-Validierung
+    if (empty($german) || empty($english)) {
+        $error = 'Bitte beide Felder ausfüllen.';
+    } elseif (strlen($german) > 255 || strlen($english) > 255) {
+        $error = 'Vokabeln dürfen maximal 255 Zeichen lang sein.';
+    } else {
+        try {
+            // Prüfen ob Vokabel bereits existiert (für diesen Benutzer)
+            $stmt = executeQuery(
+                "SELECT id FROM vocabularies WHERE user_id = ? AND german = ? AND english = ?",
+                [$user_id, $german, $english]
+            );
+            
+            if ($stmt->rowCount() > 0) {
+                $error = 'Diese Vokabel existiert bereits in deiner Sammlung.';
+            } else {
+                // Neue Vokabel hinzufügen
+                $stmt = executeQuery(
+                    "INSERT INTO vocabularies (user_id, german, english) VALUES (?, ?, ?)",
+                    [$user_id, $german, $english]
+                );
+                
+                $success = 'Vokabel erfolgreich hinzugefügt!';
+                
+                // Formular zurücksetzen
+                $_POST['german'] = '';
+                $_POST['english'] = '';
+            }
+        } catch (Exception $e) {
+            $error = 'Fehler beim Hinzufügen der Vokabel: ' . $e->getMessage();
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vokabel hinzufügen - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="dashboard.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="dashboard.php">Dashboard</a></li>
+                    <li><a href="learn.php">Lernen</a></li>
+                    <li><a href="add_vocabulary.php">Vokabel hinzufügen</a></li>
+                    <li><a href="manage_vocabulary.php">Vokabeln verwalten</a></li>
+                    <li><a href="progress.php">Fortschritt</a></li>
+                    <li><a href="logout.php">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Formular zum Hinzufügen -->
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2>Neue Vokabel hinzufügen</h2>
+            
+            <?php if ($error): ?>
+                <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+            <?php endif; ?>
+            
+            <form method="POST">
+                <div class="form-group">
+                    <label for="german">Deutsches Wort:</label>
+                    <input type="text" id="german" name="german" 
+                           value="<?= htmlspecialchars($_POST['german'] ?? '') ?>" 
+                           placeholder="z.B. Hund"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="english">Englisches Wort:</label>
+                    <input type="text" id="english" name="english" 
+                           value="<?= htmlspecialchars($_POST['english'] ?? '') ?>" 
+                           placeholder="z.B. Dog"
+                           required>
+                </div>
+                
+                <div class="d-flex justify-content-between" style="gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">
+                        ➕ Vokabel hinzufügen
+                    </button>
+                    <a href="dashboard.php" class="btn btn-secondary">
+                        ← Zurück zum Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tipps -->
+        <div class="card" style="max-width: 600px; margin: 2rem auto;">
+            <h3>💡 Tipps für bessere Vokabeln</h3>
+            <ul style="color: #666; line-height: 1.8;">
+                <li>Verwende Grundformen von Wörtern (z.B. "gehen" statt "ging")</li>
+                <li>Bei mehreren Bedeutungen, wähle die wichtigste</li>
+                <li>Achte auf korrekte Rechtschreibung</li>
+                <li>Verwende einfache Begriffe anstatt komplexe Sätze</li>
+                <li>Du kannst später jederzeit weitere Vokabeln hinzufügen</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+    // Automatischer Fokus auf erstes Eingabefeld
+    document.getElementById('german').focus();
+    
+    // Enter-Taste im ersten Feld springt zum zweiten
+    document.getElementById('german').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('english').focus();
+        }
+    });
+    </script>
+</body>
+</html>

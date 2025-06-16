@@ -1,0 +1,87 @@
+<?php
+/**
+ * Englify - Startseite
+ * Begrüßungsseite mit Navigation zu Login und Registrierung
+ */
+
+require_once 'includes/session.php';
+
+// Wenn bereits eingeloggt, zur Dashboard weiterleiten
+redirectIfLoggedIn();
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Englify - Dein Vokabeltrainer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="index.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="login.php">Login</a></li>
+                    <li><a href="register.php">Registrieren</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Hauptinhalt -->
+        <main class="card text-center">
+            <h1>Willkommen bei Englify! 🎉</h1>
+            <p style="font-size: 1.2rem; margin: 2rem 0; color: #666;">
+                Dein intelligenter Vokabeltrainer für die englische Sprache
+            </p>
+            
+            <div style="margin: 3rem 0;">
+                <h2>Was bietet Englify?</h2>
+                <div class="stats-grid" style="text-align: left; margin: 2rem 0;">
+                    <div class="stat-card">
+                        <div class="stat-number">🧠</div>
+                        <div class="stat-label">
+                            <strong>Intelligentes Lernen</strong><br>
+                            Spaced Repetition System für optimalen Lernerfolg
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">📝</div>
+                        <div class="stat-label">
+                            <strong>Eigene Vokabeln</strong><br>
+                            Füge deine eigenen Vokabeln hinzu und verwalte sie
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">📊</div>
+                        <div class="stat-label">
+                            <strong>Fortschritt verfolgen</strong><br>
+                            Behalte deinen Lernfortschritt im Blick
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">🎯</div>
+                        <div class="stat-label">
+                            <strong>Einfach & Effektiv</strong><br>
+                            Benutzerfreundliches Interface für schnelle Lernerfolge
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin: 3rem 0;">
+                <a href="register.php" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2rem;">
+                    Jetzt kostenlos registrieren
+                </a>
+                <br><br>
+                <a href="login.php" class="btn btn-secondary">
+                    Bereits registriert? Hier einloggen
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

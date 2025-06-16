@@ -1,0 +1,167 @@
+<?php
+/**
+ * Englify - Benutzer-Dashboard
+ * Hauptseite nach dem Login mit Übersicht und Navigation
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Login erforderlich
+requireLogin();
+
+$user_id = getCurrentUserId();
+$username = getCurrentUsername();
+
+// Statistiken laden
+try {
+    // Gesamtzahl Vokabeln
+    $stmt = executeQuery("SELECT COUNT(*) as total FROM vocabularies WHERE user_id = ?", [$user_id]);
+    $total_vocabularies = $stmt->fetch()['total'];
+    
+    // Gelernte Vokabeln (3x richtig beantwortet)
+    $stmt = executeQuery(
+        "SELECT COUNT(*) as learned FROM progress WHERE user_id = ? AND is_learned = 1", 
+        [$user_id]
+    );
+    $learned_vocabularies = $stmt->fetch()['learned'];
+    
+    // Fortschritt berechnen
+    $progress_percentage = $total_vocabularies > 0 ? ($learned_vocabularies / $total_vocabularies) * 100 : 0;
+    
+    // Vokabeln die gelernt werden müssen
+    $needs_learning = $total_vocabularies - $learned_vocabularies;
+    
+    // Neueste Vokabeln
+    $stmt = executeQuery(
+        "SELECT german, english, created_at FROM vocabularies 
+         WHERE user_id = ? 
+         ORDER BY created_at DESC 
+         LIMIT 5", 
+        [$user_id]
+    );
+    $recent_vocabularies = $stmt->fetchAll();
+    
+} catch (Exception $e) {
+    $error = "Fehler beim Laden der Daten: " . $e->getMessage();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="dashboard.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="dashboard.php">Dashboard</a></li>
+                    <li><a href="learn.php">Lernen</a></li>
+                    <li><a href="add_vocabulary.php">Vokabel hinzufügen</a></li>
+                    <li><a href="manage_vocabulary.php">Vokabeln verwalten</a></li>
+                    <li><a href="progress.php">Fortschritt</a></li>
+                    <li><a href="logout.php">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Begrüßung -->
+        <div class="card">
+            <h1>Willkommen zurück, <?= htmlspecialchars($username) ?>! 👋</h1>
+            <p>Bereit für eine neue Lernrunde?</p>
+        </div>
+
+        <!-- Statistiken -->
+        <div class="card">
+            <h2>Dein Lernfortschritt</h2>
+            
+            <!-- Fortschrittsbalken -->
+            <div class="progress-container">
+                <div class="progress-bar" style="width: <?= number_format($progress_percentage, 1) ?>%">
+                    <?= number_format($progress_percentage, 1) ?>%
+                </div>
+            </div>
+            
+            <!-- Statistik-Karten -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number"><?= $total_vocabularies ?></div>
+                    <div class="stat-label">Gesamte Vokabeln</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?= $learned_vocabularies ?></div>
+                    <div class="stat-label">Gelernte Vokabeln</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?= $needs_learning ?></div>
+                    <div class="stat-label">Noch zu lernen</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><?= number_format($progress_percentage, 1) ?>%</div>
+                    <div class="stat-label">Fortschritt</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schnellaktionen -->
+        <div class="card">
+            <h2>Schnellaktionen</h2>
+            <div class="d-flex" style="gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <?php if ($needs_learning > 0): ?>
+                    <a href="learn.php" class="btn btn-primary">
+                        🧠 Jetzt lernen (<?= $needs_learning ?> Vokabeln)
+                    </a>
+                <?php else: ?>
+                    <div class="btn btn-success" style="cursor: default;">
+                        🎉 Alle Vokabeln gelernt!
+                    </div>
+                <?php endif; ?>
+                
+                <a href="add_vocabulary.php" class="btn btn-secondary">
+                    ➕ Neue Vokabel hinzufügen
+                </a>
+                
+                <a href="manage_vocabulary.php" class="btn btn-warning">
+                    📝 Vokabeln verwalten
+                </a>
+                
+                <a href="progress.php" class="btn btn-success">
+                    📊 Detaillierter Fortschritt
+                </a>
+            </div>
+        </div>
+
+        <!-- Neueste Vokabeln -->
+        <?php if (!empty($recent_vocabularies)): ?>
+        <div class="card">
+            <h2>Deine neuesten Vokabeln</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Deutsch</th>
+                        <th>Englisch</th>
+                        <th>Hinzugefügt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_vocabularies as $vocab): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($vocab['german']) ?></td>
+                        <td><?= htmlspecialchars($vocab['english']) ?></td>
+                        <td><?= date('d.m.Y H:i', strtotime($vocab['created_at'])) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>

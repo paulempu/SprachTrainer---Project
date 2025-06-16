@@ -1,0 +1,310 @@
+<?php
+/**
+ * Englify - Detaillierte Fortschrittsanzeige
+ * Statistiken und Übersicht über den Lernfortschritt
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Login erforderlich
+requireLogin();
+
+$user_id = getCurrentUserId();
+
+try {
+    // Gesamtstatistiken
+    $stmt = executeQuery("SELECT COUNT(*) as total FROM vocabularies WHERE user_id = ?", [$user_id]);
+    $total_vocabularies = $stmt->fetch()['total'];
+    
+    $stmt = executeQuery("SELECT COUNT(*) as learned FROM progress WHERE user_id = ? AND is_learned = 1", [$user_id]);
+    $learned_vocabularies = $stmt->fetch()['learned'];
+    
+    $stmt = executeQuery("SELECT COUNT(*) as in_progress FROM progress WHERE user_id = ? AND is_learned = 0 AND correct_count > 0", [$user_id]);
+    $in_progress_vocabularies = $stmt->fetch()['in_progress'];
+    
+    $never_seen = $total_vocabularies - $learned_vocabularies - $in_progress_vocabularies;
+    
+    // Fortschritt nach Korrektheitsstufen
+    $stmt = executeQuery("
+        SELECT 
+            COALESCE(p.correct_count, 0) as correct_count,
+            COUNT(*) as count
+        FROM vocabularies v
+        LEFT JOIN progress p ON v.id = p.vocabulary_id AND p.user_id = v.user_id
+        WHERE v.user_id = ?
+        GROUP BY COALESCE(p.correct_count, 0)
+        ORDER BY correct_count
+    ", [$user_id]);
+    $progress_distribution = $stmt->fetchAll();
+    
+    // Letzte Aktivitäten
+    $stmt = executeQuery("
+        SELECT v.german, v.english, p.correct_count, p.is_learned, p.last_seen
+        FROM vocabularies v
+        JOIN progress p ON v.id = p.vocabulary_id
+        WHERE v.user_id = ? AND p.last_seen IS NOT NULL
+        ORDER BY p.last_seen DESC
+        LIMIT 10
+    ", [$user_id]);
+    $recent_activities = $stmt->fetchAll();
+    
+    // Schwierige Vokabeln (oft falsch beantwortet)
+    $stmt = executeQuery("
+        SELECT v.german, v.english, p.correct_count, p.last_seen,
+               (DATEDIFF(NOW(), p.last_seen)) as days_ago
+        FROM vocabularies v
+        JOIN progress p ON v.id = p.vocabulary_id
+        WHERE v.user_id = ? AND p.is_learned = 0 AND p.correct_count >= 0
+        ORDER BY p.last_seen ASC, p.correct_count ASC
+        LIMIT 10
+    ", [$user_id]);
+    $difficult_vocabularies = $stmt->fetchAll();
+    
+    $progress_percentage = $total_vocabularies > 0 ? ($learned_vocabularies / $total_vocabularies) * 100 : 0;
+    
+} catch (Exception $e) {
+    $error = "Fehler beim Laden der Statistiken: " . $e->getMessage();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortschritt - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header mit Navigation -->
+        <header class="header">
+            <nav class="nav">
+                <a href="dashboard.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="dashboard.php">Dashboard</a></li>
+                    <li><a href="learn.php">Lernen</a></li>
+                    <li><a href="add_vocabulary.php">Vokabel hinzufügen</a></li>
+                    <li><a href="manage_vocabulary.php">Vokabeln verwalten</a></li>
+                    <li><a href="progress.php">Fortschritt</a></li>
+                    <li><a href="logout.php">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Überschrift -->
+        <div class="card">
+            <h1>📊 Dein Lernfortschritt</h1>
+            <p style="color: #666;">Detaillierte Übersicht über deinen Lernerfolg</p>
+        </div>
+
+        <!-- Hauptstatistiken -->
+        <div class="card">
+            <h2>Gesamtübersicht</h2>
+            
+            <!-- Hauptfortschrittsbalken -->
+            <div style="margin: 2rem 0;">
+                <div class="d-flex justify-content-between" style="margin-bottom: 0.5rem;">
+                    <span><strong>Gesamtfortschritt</strong></span>
+                    <span><?= $learned_vocabularies ?> / <?= $total_vocabularies ?> Vokabeln</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: <?= number_format($progress_percentage, 1) ?>%">
+                        <?= number_format($progress_percentage, 1) ?>%
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistik-Karten -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #28a745;"><?= $learned_vocabularies ?></div>
+                    <div class="stat-label">Gelernte Vokabeln<br><small>(3x richtig)</small></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #ffc107;"><?= $in_progress_vocabularies ?></div>
+                    <div class="stat-label">In Bearbeitung<br><small>(1-2x richtig)</small></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #dc3545;"><?= $never_seen ?></div>
+                    <div class="stat-label">Noch nicht gesehen<br><small>(0x richtig)</small></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #667eea;"><?= $total_vocabularies ?></div>
+                    <div class="stat-label">Gesamte Vokabeln<br><small>in deiner Sammlung</small></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fortschrittsverteilung -->
+        <?php if (!empty($progress_distribution)): ?>
+        <div class="card">
+            <h2>Fortschrittsverteilung</h2>
+            <p style="color: #666;">Wie viele Vokabeln befinden sich in welcher Lernstufe?</p>
+            
+            <div style="margin: 2rem 0;">
+                <?php foreach ($progress_distribution as $dist): ?>
+                    <?php 
+                    $level = $dist['correct_count'];
+                    $count = $dist['count'];
+                    $percentage = $total_vocabularies > 0 ? ($count / $total_vocabularies) * 100 : 0;
+                    
+                    if ($level == 0) $label = "Noch nie richtig (0x)";
+                    elseif ($level == 1) $label = "Einmal richtig (1x)";
+                    elseif ($level == 2) $label = "Zweimal richtig (2x)";
+                    elseif ($level >= 3) $label = "Gelernt (3x+)";
+                    
+                    if ($level == 0) $color = "#dc3545";
+                    elseif ($level == 1) $color = "#fd7e14";
+                    elseif ($level == 2) $color = "#ffc107";
+                    else $color = "#28a745";
+                    ?>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <div class="d-flex justify-content-between" style="margin-bottom: 0.3rem;">
+                            <span><?= $label ?></span>
+                            <span><strong><?= $count ?> Vokabeln</strong></span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: <?= number_format($percentage, 1) ?>%; background: <?= $color ?>;">
+                                <?= number_format($percentage, 1) ?>%
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Letzte Aktivitäten -->
+        <?php if (!empty($recent_activities)): ?>
+        <div class="card">
+            <h2>Letzte Lernaktivitäten</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Vokabel</th>
+                        <th>Status</th>
+                        <th>Zuletzt gesehen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_activities as $activity): ?>
+                    <tr>
+                        <td>
+                            <strong><?= htmlspecialchars($activity['german']) ?></strong>
+                            <br>
+                            <span style="color: #666;"><?= htmlspecialchars($activity['english']) ?></span>
+                        </td>
+                        <td>
+                            <?php if ($activity['is_learned']): ?>
+                                <span style="color: #28a745; font-weight: bold;">✅ Gelernt</span>
+                            <?php else: ?>
+                                <span style="color: #ffc107; font-weight: bold;">
+                                    📖 <?= $activity['correct_count'] ?>/3
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td style="color: #666;">
+                            <?= date('d.m.Y H:i', strtotime($activity['last_seen'])) ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+
+        <!-- Schwierige Vokabeln -->
+        <?php if (!empty($difficult_vocabularies)): ?>
+        <div class="card">
+            <h2>Vokabeln die Aufmerksamkeit brauchen</h2>
+            <p style="color: #666;">Diese Vokabeln solltest du nochmal üben:</p>
+            
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Vokabel</th>
+                        <th>Fortschritt</th>
+                        <th>Zuletzt gesehen</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($difficult_vocabularies as $vocab): ?>
+                    <tr>
+                        <td>
+                            <strong><?= htmlspecialchars($vocab['german']) ?></strong>
+                            <br>
+                            <span style="color: #666;"><?= htmlspecialchars($vocab['english']) ?></span>
+                        </td>
+                        <td>
+                            <span style="color: #ffc107;">
+                                <?= $vocab['correct_count'] ?>/3 richtig
+                            </span>
+                            <div class="progress-container" style="width: 80px; margin-top: 4px;">
+                                <div class="progress-bar" style="width: <?= ($vocab['correct_count'] / 3) * 100 ?>%; height: 6px; font-size: 0;"></div>
+                            </div>
+                        </td>
+                        <td style="color: #666;">
+                            <?php if ($vocab['last_seen']): ?>
+                                <?= date('d.m.Y', strtotime($vocab['last_seen'])) ?>
+                                <?php if ($vocab['days_ago'] !== null): ?>
+                                    <br><small>(vor <?= $vocab['days_ago'] ?> Tagen)</small>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                Noch nie
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <a href="learn.php" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                                📖 Jetzt lernen
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+
+        <!-- Motivierende Nachrichten -->
+        <div class="card text-center">
+            <h2>💪 Motivations-Ecke</h2>
+            <?php if ($progress_percentage >= 100): ?>
+                <p style="color: #28a745; font-size: 1.2rem; margin: 1rem 0;">
+                    🎉 Fantastisch! Du hast alle deine Vokabeln gelernt!
+                </p>
+                <p>Zeit für neue Herausforderungen! Füge weitere Vokabeln hinzu.</p>
+            <?php elseif ($progress_percentage >= 75): ?>
+                <p style="color: #28a745; font-size: 1.2rem; margin: 1rem 0;">
+                    🚀 Großartig! Du bist auf der Zielgeraden!
+                </p>
+                <p>Nur noch wenige Vokabeln und du hast alles gemeistert!</p>
+            <?php elseif ($progress_percentage >= 50): ?>
+                <p style="color: #ffc107; font-size: 1.2rem; margin: 1rem 0;">
+                    💪 Super! Du hast schon die Hälfte geschafft!
+                </p>
+                <p>Bleib dran - du machst große Fortschritte!</p>
+            <?php elseif ($progress_percentage >= 25): ?>
+                <p style="color: #17a2b8; font-size: 1.2rem; margin: 1rem 0;">
+                    📈 Guter Start! Du bist auf dem richtigen Weg!
+                </p>
+                <p>Jede gelernte Vokabel bringt dich näher ans Ziel!</p>
+            <?php else: ?>
+                <p style="color: #667eea; font-size: 1.2rem; margin: 1rem 0;">
+                    🌟 Jede Reise beginnt mit dem ersten Schritt!
+                </p>
+                <p>Du hast einen großartigen Anfang gemacht - weiter so!</p>
+            <?php endif; ?>
+            
+            <div style="margin-top: 2rem;">
+                <a href="learn.php" class="btn btn-primary">
+                    🧠 Jetzt lernen
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

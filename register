@@ -1,0 +1,134 @@
+<?php
+/**
+ * Englify - Benutzerregistrierung
+ * Neue Benutzer können sich hier registrieren
+ */
+
+require_once 'includes/session.php';
+require_once 'config/database.php';
+
+// Wenn bereits eingeloggt, zur Dashboard weiterleiten
+redirectIfLoggedIn();
+
+$error = '';
+$success = '';
+
+// Formular-Verarbeitung
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    
+    // Eingabe-Validierung
+    if (empty($username) || empty($email) || empty($password)) {
+        $error = 'Bitte alle Felder ausfüllen.';
+    } elseif (strlen($username) < 3) {
+        $error = 'Benutzername muss mindestens 3 Zeichen lang sein.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Bitte gültige E-Mail-Adresse eingeben.';
+    } elseif (strlen($password) < 6) {
+        $error = 'Passwort muss mindestens 6 Zeichen lang sein.';
+    } elseif ($password !== $confirm_password) {
+        $error = 'Passwörter stimmen nicht überein.';
+    } else {
+        try {
+            // Prüfen ob Benutzername oder E-Mail bereits existiert
+            $stmt = executeQuery(
+                "SELECT id FROM users WHERE username = ? OR email = ?", 
+                [$username, $email]
+            );
+            
+            if ($stmt->rowCount() > 0) {
+                $error = 'Benutzername oder E-Mail bereits vergeben.';
+            } else {
+                // Neuen Benutzer registrieren
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                
+                $stmt = executeQuery(
+                    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                    [$username, $email, $password_hash]
+                );
+                
+                $success = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
+            }
+        } catch (Exception $e) {
+            $error = 'Fehler bei der Registrierung: ' . $e->getMessage();
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrierung - Englify</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <nav class="nav">
+                <a href="index.php" class="logo">📚 Englify</a>
+                <ul class="nav-links">
+                    <li><a href="login.php">Login</a></li>
+                    <li><a href="register.php">Registrieren</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Registrierungsformular -->
+        <div class="auth-card">
+            <div class="card">
+                <h2 class="text-center mb-2">Konto erstellen</h2>
+                
+                <?php if ($error): ?>
+                    <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+                <?php endif; ?>
+                
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="username">Benutzername:</label>
+                        <input type="text" id="username" name="username" 
+                               value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" 
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">E-Mail-Adresse:</label>
+                        <input type="email" id="email" name="email" 
+                               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" 
+                               required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Passwort:</label>
+                        <input type="password" id="password" name="password" required>
+                        <small style="color: #666;">Mindestens 6 Zeichen</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirm_password">Passwort bestätigen:</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Konto erstellen
+                    </button>
+                </form>
+                
+                <div class="text-center mt-2">
+                    <p>Bereits ein Konto? <a href="login.php">Hier einloggen</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
