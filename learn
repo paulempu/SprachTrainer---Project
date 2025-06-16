@@ -154,22 +154,17 @@ try {
         <div class="card">
             <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 1rem;">
                 <h2>Lernfortschritt</h2>
-                <span style="color: #666;"><?= $learned_vocab ?> / <?= $total_vocab ?> Vokabeln gelernt</span>
+                <span id="progress-text"><?= $learned_vocab ?> / <?= $total_vocab ?> Vokabeln gelernt</span>
             </div>
             <div class="progress-container">
-                <div class="progress-bar" style="width: <?= number_format($progress_percent, 1) ?>%">
+                <div id="progress-bar" class="progress-bar" style="width: <?= number_format($progress_percent, 1) ?>%">
                     <?= number_format($progress_percent, 1) ?>%
                 </div>
             </div>
         </div>
 
-        <?php if ($error): ?>
-            <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-        
-        <?php if ($success): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-        <?php endif; ?>
+        <!-- Success Message -->
+        <div id="success-message" class="alert alert-success" style="display: none;"></div>
 
         <!-- Lernbereich -->
         <?php if ($current_vocabulary): ?>
@@ -179,82 +174,23 @@ try {
                 <div class="d-flex justify-content-between align-items-center" style="flex-wrap: wrap; gap: 1rem;">
                     <h3>Lernmodus</h3>
                     <div class="d-flex" style="gap: 0.5rem; flex-wrap: wrap;">
-                        <a href="?direction=de_to_en" class="btn <?= $direction === 'de_to_en' ? 'btn-primary' : 'btn-secondary' ?>">
+                        <button onclick="changeDirection('de_to_en')" id="btn-de-en" class="btn <?= $direction === 'de_to_en' ? 'btn-primary' : 'btn-secondary' ?>">
                             🇩🇪 → 🇬🇧 Deutsch zu Englisch
-                        </a>
-                        <a href="?direction=en_to_de" class="btn <?= $direction === 'en_to_de' ? 'btn-primary' : 'btn-secondary' ?>">
+                        </button>
+                        <button onclick="changeDirection('en_to_de')" id="btn-en-de" class="btn <?= $direction === 'en_to_de' ? 'btn-primary' : 'btn-secondary' ?>">
                             🇬🇧 → 🇩🇪 Englisch zu Deutsch
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Flashcard -->
-            <div class="flashcard">
-                <?php if ($direction === 'de_to_en'): ?>
-                    <div style="color: #666; margin-bottom: 1rem;">🇩🇪 Deutsch</div>
-                    <div class="flashcard-word"><?= htmlspecialchars($current_vocabulary['german']) ?></div>
-                    
-                    <?php if ($show_answer): ?>
-                        <div style="color: #666; margin: 2rem 0 1rem;">🇬🇧 Englisch</div>
-                        <div style="font-size: 2rem; color: #28a745; font-weight: bold;">
-                            <?= htmlspecialchars($current_vocabulary['english']) ?>
-                        </div>
-                    <?php else: ?>
-                        <div style="color: #666; margin-top: 2rem;">
-                            Wie heißt das auf Englisch?
-                        </div>
-                    <?php endif; ?>
-                <?php else: ?>
-                    <div style="color: #666; margin-bottom: 1rem;">🇬🇧 Englisch</div>
-                    <div class="flashcard-word"><?= htmlspecialchars($current_vocabulary['english']) ?></div>
-                    
-                    <?php if ($show_answer): ?>
-                        <div style="color: #666; margin: 2rem 0 1rem;">🇩🇪 Deutsch</div>
-                        <div style="font-size: 2rem; color: #28a745; font-weight: bold;">
-                            <?= htmlspecialchars($current_vocabulary['german']) ?>
-                        </div>
-                    <?php else: ?>
-                        <div style="color: #666; margin-top: 2rem;">
-                            Wie heißt das auf Deutsch?
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-
-                <!-- Fortschritt dieser Vokabel -->
-                <div style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
-                    Richtig beantwortet: <?= $current_vocabulary['correct_count'] ?>/3
-                    <?php if ($current_vocabulary['correct_count'] > 0): ?>
-                        <div class="progress-container" style="width: 150px; margin: 0.5rem auto;">
-                            <div class="progress-bar" style="width: <?= min(100, ($current_vocabulary['correct_count'] / 3) * 100) ?>%">
-                                <?= min(100, round(($current_vocabulary['correct_count'] / 3) * 100)) ?>%
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Steuerung -->
-                <div class="flashcard-controls">
-                    <?php if (!$show_answer): ?>
-                        <a href="?direction=<?= $direction ?>&show_answer=1" class="btn btn-secondary">
-                            💡 Antwort anzeigen
-                        </a>
-                    <?php else: ?>
-                        <form method="POST" style="display: flex; gap: 1rem;">
-                            <input type="hidden" name="vocabulary_id" value="<?= $current_vocabulary['id'] ?>">
-                            <button type="submit" name="answer" value="incorrect" class="btn btn-danger">
-                                ❌ Kann ich nicht
-                            </button>
-                            <button type="submit" name="answer" value="correct" class="btn btn-success">
-                                ✅ Kann ich
-                            </button>
-                        </form>
-                    <?php endif; ?>
-                </div>
+            <div id="flashcard-container" class="flashcard">
+                <!-- Wird von JavaScript gefüllt -->
             </div>
 
         <?php else: ?>
-            <!-- Keine Vokabeln zum Lernen -->
+            <!-- Alle Vokabeln gelernt - (gleich wie vorher) -->
             <div class="card text-center">
                 <?php if ($total_vocab === 0): ?>
                     <h2>Noch keine Vokabeln vorhanden</h2>
@@ -265,16 +201,35 @@ try {
                         ➕ Erste Vokabel hinzufügen
                     </a>
                 <?php else: ?>
-                    <h2>🎉 Alle Vokabeln gelernt!</h2>
-                    <p style="color: #666; margin: 2rem 0;">
-                        Fantastisch! Du hast alle deine Vokabeln gelernt. Füge neue Vokabeln hinzu oder wiederhole bereits gelernte.
-                    </p>
-                    <div class="d-flex justify-content-center" style="gap: 1rem; flex-wrap: wrap;">
-                        <a href="add_vocabulary.php" class="btn btn-primary">
-                            ➕ Neue Vokabeln hinzufügen
-                        </a>
-                        <a href="dashboard.php" class="btn btn-success">
-                            📊 Dashboard ansehen
+                    <!-- Alle Vokabeln erfolgreich gelernt -->
+                    <div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 3rem; border-radius: 20px; margin: 2rem 0;">
+                        <h1 style="font-size: 3rem; margin-bottom: 1rem;">🎉 GLÜCKWUNSCH! 🎉</h1>
+                        <h2 style="margin-bottom: 2rem;">Alle Vokabeln erfolgreich gelernt!</h2>
+                        <p style="font-size: 1.3rem; margin-bottom: 2rem; opacity: 0.9;">
+                            Du hast alle <?= $total_vocab ?> Vokabeln gemeistert!<br>
+                            Das ist eine fantastische Leistung! 🌟
+                        </p>
+                        
+                        <!-- Erfolgs-Statistiken -->
+                        <div class="stats-grid" style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">✅</div>
+                                <div class="stat-label" style="color: white;"><strong><?= $learned_vocab ?> Vokabeln</strong><br>erfolgreich gelernt</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">💯</div>
+                                <div class="stat-label" style="color: white;"><strong>100% Fortschritt</strong><br>erreicht</div>
+                            </div>
+                            <div class="stat-card" style="background: rgba(255,255,255,0.2); color: white;">
+                                <div class="stat-number" style="color: white; font-size: 3rem;">🏆</div>
+                                <div class="stat-label" style="color: white;"><strong>Ziel erreicht!</strong><br>Alle Vokabeln gemeistert</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center" style="margin-top: 3rem;">
+                        <a href="dashboard.php" class="btn btn-secondary" style="font-size: 1.1rem;">
+                            🏠 Zurück zum Dashboard
                         </a>
                     </div>
                 <?php endif; ?>
@@ -294,26 +249,147 @@ try {
     </div>
 
     <script>
+    let currentVocabulary = <?= json_encode($current_vocabulary) ?>;
+    let currentDirection = '<?= $direction ?>';
+    let showAnswer = false;
+
+    function renderFlashcard() {
+        if (!currentVocabulary) return;
+        
+        const container = document.getElementById('flashcard-container');
+        const isGermanToEnglish = currentDirection === 'de_to_en';
+        
+        container.innerHTML = `
+            ${isGermanToEnglish ? '<div style="color: #666; margin-bottom: 1rem;">🇩🇪 Deutsch</div>' : '<div style="color: #666; margin-bottom: 1rem;">🇬🇧 Englisch</div>'}
+            <div class="flashcard-word">${isGermanToEnglish ? currentVocabulary.german : currentVocabulary.english}</div>
+            
+            <div id="answer-section" style="display: ${showAnswer ? 'block' : 'none'};">
+                ${isGermanToEnglish ? '<div style="color: #666; margin: 2rem 0 1rem;">🇬🇧 Englisch</div>' : '<div style="color: #666; margin: 2rem 0 1rem;">🇩🇪 Deutsch</div>'}
+                <div style="font-size: 2rem; color: #28a745; font-weight: bold;">
+                    ${isGermanToEnglish ? currentVocabulary.english : currentVocabulary.german}
+                </div>
+            </div>
+            
+            <div id="question-text" style="color: #666; margin-top: 2rem; display: ${showAnswer ? 'none' : 'block'};">
+                ${isGermanToEnglish ? 'Wie heißt das auf Englisch?' : 'Wie heißt das auf Deutsch?'}
+            </div>
+
+            <div style="margin-top: 2rem; color: #666; font-size: 0.9rem;">
+                Richtig beantwortet: ${currentVocabulary.correct_count}/3
+                ${currentVocabulary.correct_count > 0 ? `
+                    <div class="progress-container" style="width: 150px; margin: 0.5rem auto;">
+                        <div class="progress-bar" style="width: ${Math.min(100, (currentVocabulary.correct_count / 3) * 100)}%">
+                            ${Math.min(100, Math.round((currentVocabulary.correct_count / 3) * 100))}%
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+
+            <div class="flashcard-controls">
+                <button id="show-answer-btn" class="btn btn-secondary" onclick="showAnswerFunction()" style="display: ${showAnswer ? 'none' : 'inline-block'};">
+                    💡 Antwort anzeigen
+                </button>
+                
+                <div id="answer-buttons" style="display: ${showAnswer ? 'flex' : 'none'}; gap: 1rem;">
+                    <button onclick="submitAnswer('incorrect')" class="btn btn-danger">
+                        ❌ Kann ich nicht
+                    </button>
+                    <button onclick="submitAnswer('correct')" class="btn btn-success">
+                        ✅ Kann ich
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function showAnswerFunction() {
+        showAnswer = true;
+        renderFlashcard();
+    }
+
+    function submitAnswer(answer) {
+        const formData = new FormData();
+        formData.append('ajax', '1');
+        formData.append('vocabulary_id', currentVocabulary.id);
+        formData.append('answer', answer);
+
+        fetch('learn.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Success Message anzeigen
+                if (data.message) {
+                    const successDiv = document.getElementById('success-message');
+                    successDiv.textContent = data.message;
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 3000);
+                }
+                
+                // Fortschritt aktualisieren
+                document.getElementById('progress-text').textContent = 
+                    `${data.progress.learned} / ${data.progress.total} Vokabeln gelernt`;
+                document.getElementById('progress-bar').style.width = `${data.progress.percentage}%`;
+                document.getElementById('progress-bar').textContent = `${data.progress.percentage}%`;
+                
+                // Nächste Vokabel laden oder Erfolgsseite anzeigen
+                if (data.next_vocabulary) {
+                    currentVocabulary = data.next_vocabulary;
+                    showAnswer = false;
+                    renderFlashcard();
+                } else {
+                    // Alle Vokabeln gelernt - Seite neu laden um Erfolgsseite zu zeigen
+                    location.reload();
+                }
+            } else {
+                alert('Fehler: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Fehler beim Senden der Antwort');
+        });
+    }
+
+    function changeDirection(newDirection) {
+        currentDirection = newDirection;
+        showAnswer = false;
+        
+        // Button-Status ändern
+        document.getElementById('btn-de-en').className = 
+            newDirection === 'de_to_en' ? 'btn btn-primary' : 'btn btn-secondary';
+        document.getElementById('btn-en-de').className = 
+            newDirection === 'en_to_de' ? 'btn btn-primary' : 'btn btn-secondary';
+        
+        renderFlashcard();
+    }
+
     // Tastatur-Shortcuts
     document.addEventListener('keydown', function(e) {
-        // Spacebar für "Antwort anzeigen"
-        if (e.code === 'Space' && !<?= json_encode($show_answer) ?>) {
+        if (e.code === 'Space' && !showAnswer) {
             e.preventDefault();
-            window.location.href = '?direction=<?= $direction ?>&show_answer=1';
+            showAnswerFunction();
         }
         
-        // "j" für "Kann ich nicht"
-        if (e.key === 'j' && <?= json_encode($show_answer) ?>) {
+        if (e.key === 'j' && showAnswer) {
             e.preventDefault();
-            document.querySelector('button[value="incorrect"]').click();
+            submitAnswer('incorrect');
         }
         
-        // "k" für "Kann ich"
-        if (e.key === 'k' && <?= json_encode($show_answer) ?>) {
+        if (e.key === 'k' && showAnswer) {
             e.preventDefault();
-            document.querySelector('button[value="correct"]').click();
+            submitAnswer('correct');
         }
     });
+
+    // Initial render
+    if (currentVocabulary) {
+        renderFlashcard();
+    }
     </script>
 </body>
 </html>
